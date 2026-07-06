@@ -1,27 +1,19 @@
-# Telegram AI Assistant
+# 01 - Telegram AI Chat
 
 ## Goal
-
-A personal AI assistant built with n8n and Gemini.
+Build an AI-powered Telegram assistant using n8n, Telegram, and Gemini.
 
 ## Features
+- Receive Telegram messages
+- Validate text input
+- Send user message to Gemini
+- Reply back on Telegram
 
-- Summarize text
-- Translate text
-- Explain concepts
-- Rewrite text
-- Write professional emails
-
-## Technologies
-
-- n8n
-- Telegram
-- Gemini
-
-## Version
-
-v1.0
+## Workflow
+Telegram Trigger → Normalize Data → Validate Message → AI Agent → Send Reply
 
 ## Status
+✅ Completed
 
-Planning
+## Version
+v1.0

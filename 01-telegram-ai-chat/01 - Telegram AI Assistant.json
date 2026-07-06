@@ -1,0 +1,235 @@
+{
+  "name": "01 - Telegram AI Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -208,
+        -32
+      ],
+      "id": "3e5a287e-a285-4ed0-bdc0-31799bf26bcc",
+      "name": "Telegram Trigger",
+      "webhookId": "366dd1c5-f0e8-4085-8204-2716f5c78fb0",
+      "credentials": {
+        "telegramApi": {
+          "id": "n7euTXvwcI0UOgCd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        176
+      ],
+      "id": "9b76de52-0e39-4432-a6f6-48630e6a5743",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fa343fc3-a07b-4db7-841c-6fd03b437c7d",
+              "name": "chat_id",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "number"
+            },
+            {
+              "id": "759ed8a5-4b89-44dd-80a1-ba71bab8dcfc",
+              "name": "first_name",
+              "value": "={{ $json.message.from.first_name }}",
+              "type": "string"
+            },
+            {
+              "id": "49a00f98-959f-4d81-aea2-a31c653ffaa4",
+              "name": "username",
+              "value": "={{ $json.message.from.username }}",
+              "type": "string"
+            },
+            {
+              "id": "b5c9b8dc-d040-4af5-a4f2-3aab24368438",
+              "name": "message",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        -32
+      ],
+      "id": "bfc404d4-8f4e-4d01-8a95-1c6a2a511cc4",
+      "name": "Normalize Telegram Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d6de990d-a7a0-43d8-8496-4c0b5f334c1f",
+              "leftValue": "={{ $json.message }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        240,
+        -32
+      ],
+      "id": "99063d6f-7842-4ed3-a6c4-c5f7e4865842",
+      "name": "Validate Message"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "options": {
+          "systemMessage": "You are a helpful AI assistant.\n\nYou can:\n- Answer questions.\n- Summarize text.\n- Translate between languages.\n- Explain programming concepts.\n- Write professional emails.\n- Rewrite text clearly.\n\nAlways provide concise, accurate, and friendly responses.\n\nIf the user asks something unclear, ask a follow-up question instead of guessing."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        416,
+        -96
+      ],
+      "id": "f6762a04-1c9d-4dc9-b980-76ce1c74db34",
+      "name": "Telegram Assistant"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Telegram Data').item.json.chat_id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        -96
+      ],
+      "id": "aff70ac3-a67d-4a79-b188-2e1653ce6201",
+      "name": "Send Telegram Reply",
+      "webhookId": "0a892128-15db-4f0d-bc42-736ab53af5b1",
+      "credentials": {
+        "telegramApi": {
+          "id": "n7euTXvwcI0UOgCd",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Telegram Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Telegram Assistant",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Telegram Data": {
+      "main": [
+        [
+          {
+            "node": "Validate Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Message": {
+      "main": [
+        [
+          {
+            "node": "Telegram Assistant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Assistant": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6283b899-7aaf-42a3-bdf8-0c9bcc209bf4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3f614d33b6cfc6853597d9b99af05f3ee9b93fb4b4bd4a133af35c1b20d95915"
+  },
+  "nodeGroups": [],
+  "id": "kft2Hh4lXG1OOcPi",
+  "tags": []
+}
