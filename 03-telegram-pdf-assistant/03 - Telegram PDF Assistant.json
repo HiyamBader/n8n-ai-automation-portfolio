@@ -1,0 +1,391 @@
+{
+  "name": "03 - Telegram PDF Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -640,
+        -80
+      ],
+      "id": "71760e23-bc51-417e-a023-16fc7cbf7b8d",
+      "name": "Telegram Trigger",
+      "webhookId": "41594f08-5d93-4ffe-926c-31c41bdf9dc5",
+      "credentials": {
+        "telegramApi": {
+          "id": "n7euTXvwcI0UOgCd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b783ab1f-e4d0-44eb-bc34-93c4e11bba67",
+              "name": "chat_id",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "number"
+            },
+            {
+              "id": "9f7e5773-eda6-41b8-bf3c-5c881aeea399",
+              "name": "first_name",
+              "value": "={{ $json.message.from.first_name }}",
+              "type": "string"
+            },
+            {
+              "id": "2499b446-4a98-4811-a5c3-17b05b033a22",
+              "name": "username",
+              "value": "={{ $json.message.from.username }}",
+              "type": "string"
+            },
+            {
+              "id": "ad219d45-ce78-4223-94ca-6015f54543dc",
+              "name": "mime_type",
+              "value": "={{ $json.message.document.mime_type }}",
+              "type": "string"
+            },
+            {
+              "id": "05c976e2-eed4-48da-b609-0e2cad3873dc",
+              "name": "file_id",
+              "value": "={{ $json.message.document.file_id }}",
+              "type": "string"
+            },
+            {
+              "id": "f197105f-6624-4bef-b91a-3ee46dc3031f",
+              "name": "file_name",
+              "value": "={{ $json.message.document.file_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -416,
+        -80
+      ],
+      "id": "39299b6e-6adb-46da-99e6-4cc23fffb951",
+      "name": "Normalize Telegram File"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Telegram File').item.json.chat_id }}",
+        "text": "Please send a PDF file so I can summarize it.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        32,
+        16
+      ],
+      "id": "6097aae6-41ff-4401-9d51-4ea4e5af3168",
+      "name": "Send \"Please send a PDF\"",
+      "webhookId": "feb85913-4fac-4363-8c87-a95b6d99eee6",
+      "credentials": {
+        "telegramApi": {
+          "id": "n7euTXvwcI0UOgCd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        32,
+        -176
+      ],
+      "id": "192d6d46-d38e-415e-9658-8053fad2a237",
+      "name": "Get a file",
+      "webhookId": "273727ee-b283-4d56-960c-3c548581afef",
+      "credentials": {
+        "telegramApi": {
+          "id": "n7euTXvwcI0UOgCd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        256,
+        -176
+      ],
+      "id": "af58c0cd-c0fe-4597-991f-f4642ec9f134",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e84a0397-56e8-4895-896d-83e082e03f91",
+              "name": "prompt",
+              "value": "=Summarize the following PDF in Arabic.\n\nRequirements:\n- Use clear bullet points.\n- Keep it concise.\n- Do not invent information.\n- Do not use Markdown formatting.\n- If the document was truncated, mention that this is a summary of the first part only.\n\nDocument:\n{{$json.text}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        688,
+        -176
+      ],
+      "id": "41102513-485c-42ff-95ed-9d4ba71c2a69",
+      "name": "Build Summary Prompt"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        912,
+        -176
+      ],
+      "id": "0baa83e7-473c-4949-9888-26a43c20ce2f",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        992,
+        48
+      ],
+      "id": "7cce368b-4f3d-488e-ace8-6940f20aac04",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1897dc54-4f41-4160-aaa5-e8392f84e540",
+              "leftValue": "={{ $json.mime_type }}",
+              "rightValue": "application/pdf",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -192,
+        -80
+      ],
+      "id": "869b0076-ab91-4d79-b645-b4ea3698b9d4",
+      "name": "Validate PDF File"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Normalize Telegram File').item.json.chat_id }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1264,
+        -176
+      ],
+      "id": "0111bf82-587e-4baa-8b8e-849e9351bfd4",
+      "name": "Send PDF Summary",
+      "webhookId": "d7058983-731f-47d0-98c8-f5fa1f83d0b7",
+      "credentials": {
+        "telegramApi": {
+          "id": "n7euTXvwcI0UOgCd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = ($json.text || \"\").trim();\n\nconst maxChars = 12000;\n\nreturn [\n  {\n    json: {\n      ...$json,\n      text: text.slice(0, maxChars),\n      wasTruncated: text.length > maxChars,\n      originalLength: text.length\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -176
+      ],
+      "id": "8258e74e-46c7-408b-b1cc-e46c289582b5",
+      "name": "Limit Extracted Text"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Telegram File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Telegram File": {
+      "main": [
+        [
+          {
+            "node": "Validate PDF File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Limit Extracted Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Summary Prompt": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Send PDF Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate PDF File": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send \"Please send a PDF\"",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit Extracted Text": {
+      "main": [
+        [
+          {
+            "node": "Build Summary Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6ef57cf0-9249-4bff-9c72-d79cf7184f5a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3f614d33b6cfc6853597d9b99af05f3ee9b93fb4b4bd4a133af35c1b20d95915"
+  },
+  "nodeGroups": [],
+  "id": "XkJdlgQZRF3kA11H",
+  "tags": []
+}
