@@ -22,7 +22,8 @@ Build an AI assistant that processes new Gmail messages and sends a concise summ
 
 ## Status
 
-🟡 Planning
+
+🟢 Completed
 
 ## Version
 
