@@ -1,0 +1,223 @@
+{
+  "name": "06 - Gmail AI Email Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a146f033-5297-47a6-b698-a90729443c45",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZdD2dTa7mZw2j6HY",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7fad0e8b-340e-4094-83da-20ecaee10bee",
+              "name": "from",
+              "value": "={{ $json.From }}",
+              "type": "string"
+            },
+            {
+              "id": "fb61dfec-780d-4a67-9aab-e7142777ea07",
+              "name": "subject",
+              "value": "={{ $json.Subject }}",
+              "type": "string"
+            },
+            {
+              "id": "48515578-6e82-4908-9770-bdfdf4b026d8",
+              "name": "body",
+              "value": "={{ $json.snippet }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        0
+      ],
+      "id": "f91489ac-955f-4b6e-bbc0-e111a32a311e",
+      "name": "Normalize Email"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.prompt }}",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        624,
+        0
+      ],
+      "id": "ccddb6db-d3dd-47e5-b064-c2e94dabe70f",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        160
+      ],
+      "id": "6b8bbd21-a3c5-46b1-8c13-c410fa2976a4",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YTrk6F91XsKxrFqm",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "1849095413",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        928,
+        0
+      ],
+      "id": "c09dc004-26f9-4072-a40e-c6564616b3ef",
+      "name": "Send Email Summary",
+      "webhookId": "7756dfcf-dbfc-4c58-8eb9-e19b63f1340b",
+      "credentials": {
+        "telegramApi": {
+          "id": "n7euTXvwcI0UOgCd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c10b7868-a90f-4d84-a4cd-f16478151147",
+              "name": "prompt",
+              "value": "=Summarize the following email in Arabic.\n\nRequirements:\n- Use clear bullet points.\n- Keep it concise.\n- Mention the sender.\n- Mention the purpose of the email.\n- Do not invent information.\n- Do not use Markdown formatting.\n\nFrom:\n{{$json.from}}\n\nSubject:\n{{$json.subject}}\n\nEmail:\n{{$json.body}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        0
+      ],
+      "id": "90b634e1-bdf3-4ec6-9fa3-5f9d79433640",
+      "name": "Build Email Summary Prompt"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Email": {
+      "main": [
+        [
+          {
+            "node": "Build Email Summary Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Send Email Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email Summary": {
+      "main": [
+        []
+      ]
+    },
+    "Build Email Summary Prompt": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2cd006d5-ba8b-4597-892a-7d837129ceda",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3f614d33b6cfc6853597d9b99af05f3ee9b93fb4b4bd4a133af35c1b20d95915"
+  },
+  "nodeGroups": [],
+  "id": "J8WUOJlE6B13f23l",
+  "tags": []
+}
