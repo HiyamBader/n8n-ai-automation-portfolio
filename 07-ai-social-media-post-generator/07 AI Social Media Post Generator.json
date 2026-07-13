@@ -1,0 +1,560 @@
+{
+  "name": "07 AI Social Media Post Generator",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -320
+      ],
+      "id": "ee45016b-38f5-4d99-a768-0547eec48444",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fa6d9de3-2d6b-4780-8507-464332528a37",
+              "name": "brand_name",
+              "value": "Palestinian Embroidery",
+              "type": "string"
+            },
+            {
+              "id": "14f2e75a-38e0-4d16-b38b-84b2a75fe78e",
+              "name": "business_type",
+              "value": "Palestinian embroidery and heritage products",
+              "type": "string"
+            },
+            {
+              "id": "1a4e6165-139e-4eaf-a333-b19a46c44f7b",
+              "name": "audience",
+              "value": "People interested in Palestinian heritage, handmade products, and traditional embroidery",
+              "type": "string"
+            },
+            {
+              "id": "f05ee80b-006b-4e6c-9ab8-55a682f8b4fb",
+              "name": "language",
+              "value": "Arabic",
+              "type": "string"
+            },
+            {
+              "id": "cbe5b665-ecb3-4f92-acc3-6bb122f4bd7b",
+              "name": "tone",
+              "value": "Warm, authentic, elegant, and culturally respectful",
+              "type": "string"
+            },
+            {
+              "id": "1e8f5232-e802-494b-927b-cb595f94e527",
+              "name": "post_type",
+              "value": "educational_tip",
+              "type": "string"
+            },
+            {
+              "id": "ec8bca87-92f4-48ed-988a-c3abce1cde29",
+              "name": "content_context ",
+              "value": "Focus on Palestinian heritage, craftsmanship, embroidery patterns, handmade quality, cultural identity, styling, gifts, and product care. ",
+              "type": "string"
+            },
+            {
+              "id": "135f066b-b432-4281-8ad4-f1b098197a2c",
+              "name": "content_boundaries",
+              "value": "Do not invent historical facts. Keep the content culturally respectful and authentic.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        -320
+      ],
+      "id": "80da4586-d888-4e5b-b06a-8cddea147321",
+      "name": "Content Configuration"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert Arabic social media content creator.\n\nGenerate ONE Facebook post for the following business.\n\nBusiness Information\n\nBrand Name:\n{{ $json.brand_name }}\n\nBusiness Type:\n{{ $json.business_type }}\n\nTarget Audience:\n{{ $json.target_audience }}\n\nLanguage:\n{{ $json.language }}\n\nTone:\n{{ $json.tone }}\n\nBusiness Context:\n{{ $json.content_context }}\n\nContent Boundaries:\n{{ $json.content_boundaries }}\n\nPost Type:\n{{ $json.post_type }}\n\nPost Direction:\n{{ $json.post_type_description }}\n\nRequirements\n\n- Write naturally as a human.\n- Make the opening sentence attention-grabbing.\n- Keep the post between 80 and 180 words.\n- Provide useful value before promotion.\n- Avoid repeating common clichés.\n- End with a question or call to engagement.\n- Add 3-5 relevant hashtags.\n- Do not use Markdown.\n- Return only the final Facebook post."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        672,
+        -320
+      ],
+      "id": "aecf97ba-e615-42a6-a518-6974c37cb976",
+      "name": "Generate Social Media Post",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YTrk6F91XsKxrFqm",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const postTypes = [\n  {\n    key: \"educational_tip\",\n    description: \"Share one useful tip related to the business, its products, services, usage, care, selection, or customer experience.\"\n  },\n  {\n    key: \"storytelling\",\n    description: \"Tell a short engaging story connected to the brand, craft, product, customer experience, or business values.\"\n  },\n  {\n    key: \"product_highlight\",\n    description: \"Highlight one product or service in a helpful, elegant, and non-pushy promotional style.\"\n  },\n  {\n    key: \"common_mistake\",\n    description: \"Explain one common mistake customers make related to choosing, using, maintaining, or understanding the product or service.\"\n  },\n  {\n    key: \"interactive_question\",\n    description: \"Ask an engaging question that encourages followers to share preferences, opinions, memories, or experiences.\"\n  },\n  {\n    key: \"behind_the_scenes\",\n    description: \"Create content about craftsmanship, preparation, process, quality, effort, or work behind the final product or service.\"\n  },\n  {\n    key: \"inspirational\",\n    description: \"Write an emotional or inspiring post connected to the brand values, lifestyle, identity, creativity, or customer goals.\"\n  },\n  {\n    key: \"soft_promotion\",\n    description: \"Write a light promotional post that presents value without sounding aggressive or overly sales-focused.\"\n  },\n  {\n    key: \"seasonal\",\n    description: \"Create content related to the current season, holiday, occasion, weather, or shopping moment when relevant.\"\n  }\n];\n\nconst selected = postTypes[Math.floor(Math.random() * postTypes.length)];\n\nreturn [\n  {\n    json: {\n      ...$json,\n      post_type: selected.key,\n      post_type_description: selected.description\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        -320
+      ],
+      "id": "918f8884-9499-409d-bc93-5dba8f95ca3d",
+      "name": "Select Post Type"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expert AI image prompt engineer.\n\nCreate one professional image generation prompt based on the following Facebook post.\n\nFacebook Post:\n{{ $json.content.parts[0].text }}\n\nBusiness Name:\n{{ $('Content Configuration').item.json.brand_name }}\n\nBusiness Type:\n{{ $('Content Configuration').item.json.business_type }}\n\nRequirements:\n- The prompt must be in English.\n- Create a realistic, premium-quality social media image.\n- No text inside the image.\n- Cinematic lighting.\n- High detail.\n- Professional composition.\n- Suitable for Facebook.\n- Match the mood of the post.\n- Focus on the business identity.\n- Return only the image prompt."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1024,
+        -400
+      ],
+      "id": "57b0e356-03ba-43bc-b84c-10ecad5fdcbc",
+      "name": "Generate Image Prompt",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YTrk6F91XsKxrFqm",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "1849095413",
+        "message": "=🎨 AI Social Media Content Review\n\nYour new social media post has been generated successfully.\n\nPlease review the generated post and image, then choose one of the following options:\n\n1️⃣ Publish\nPublish the post to Facebook.\n\n2️⃣ Regenerate\nGenerate a new version of the post and image.\n\n3️⃣ Cancel\nDiscard this post without publishing.\n\n⚠️ Please reply with 1, 2, or 3 only.",
+        "responseType": "freeText",
+        "options": {
+          "messageButtonLabel": "Respond"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1824,
+        -304
+      ],
+      "id": "0422b997-961c-4fc6-bb89-7dbe6560af93",
+      "name": "Request Post Approval",
+      "webhookId": "027b16f2-6c5c-4b67-b55f-f7eeff325e77",
+      "credentials": {
+        "telegramApi": {
+          "id": "n7euTXvwcI0UOgCd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data.text }}",
+                    "rightValue": "1",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "f80f8f09-a784-4b2b-8fa6-5e367cc16cc6"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "approve"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "991ecc0b-1766-455e-b123-46115f61bdeb",
+                    "leftValue": "={{ $json.data.text }}",
+                    "rightValue": "2",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "regenerate"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "84fdb397-07cf-4a95-a6ce-4b7c454c5b1c",
+                    "leftValue": "={{ $json.data.text }}",
+                    "rightValue": "3",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cancel"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2048,
+        -304
+      ],
+      "id": "3a8086aa-5e8c-47ca-922e-508570f5463f",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "1849095413",
+        "text": "❌ تم إلغاء المنشور ولن يتم نشره.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2272,
+        -208
+      ],
+      "id": "f58f765c-9efd-4251-8cb8-53b5baa91585",
+      "name": "Send a text message",
+      "webhookId": "b1b18ff9-9b0d-4e15-ad29-22d749b62286",
+      "credentials": {
+        "telegramApi": {
+          "id": "n7euTXvwcI0UOgCd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash-image",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash-image (Nano Banana)"
+        },
+        "prompt": "={{ $json.content.parts[0].text }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1376,
+        -304
+      ],
+      "id": "4dd222bd-39ee-4a20-8844-9fd8bdc115de",
+      "name": "Generate an image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "1849095413",
+        "binaryData": true,
+        "additionalFields": {
+          "caption": "={{ $('Generate Social Media Post').item.json.content.parts[0].text }}"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1600,
+        -304
+      ],
+      "id": "10727b5a-57b2-4651-8b0a-520302a361f7",
+      "name": "Send a photo message",
+      "webhookId": "a1f7a2ab-2222-4eee-ad1d-72b099013737",
+      "credentials": {
+        "telegramApi": {
+          "id": "n7euTXvwcI0UOgCd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v25.0/134981909875380/photos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": []
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "source",
+              "inputDataFieldName": "=data"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $('Generate Social Media Post').item.json.content.parts[0].text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2496,
+        -496
+      ],
+      "id": "1a8c619a-7bd8-46f3-972b-14e90f46c24c",
+      "name": "Publish Photo to Facebook",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "6bAO9hlnYLe5fCMy",
+          "name": "Query Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2272,
+        -496
+      ],
+      "id": "1cda212d-dc4b-4b92-a91b-95658baae2c0",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Content Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Configuration": {
+      "main": [
+        [
+          {
+            "node": "Select Post Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Social Media Post": {
+      "main": [
+        [
+          {
+            "node": "Generate Image Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Post Type": {
+      "main": [
+        [
+          {
+            "node": "Generate Social Media Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image Prompt": {
+      "main": [
+        [
+          {
+            "node": "Generate an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Post Approval": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Generate Social Media Post",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Request Post Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate an image": {
+      "main": [
+        [
+          {
+            "node": "Send a photo message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a photo message": {
+      "main": [
+        [
+          {
+            "node": "Request Post Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Publish Photo to Facebook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "721771fc-a78e-4784-8d9a-e66f97273eb7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3f614d33b6cfc6853597d9b99af05f3ee9b93fb4b4bd4a133af35c1b20d95915"
+  },
+  "nodeGroups": [],
+  "id": "N8A0P7NnS2BJHioD",
+  "tags": []
+}
