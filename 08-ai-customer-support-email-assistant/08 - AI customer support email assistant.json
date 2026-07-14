@@ -1,0 +1,866 @@
+{
+  "name": "08 AI customer support email assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -128,
+        240
+      ],
+      "id": "e3a1b696-2629-473c-ae75-7fcb7bc5967c",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZdD2dTa7mZw2j6HY",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ea58f510-34ae-47d8-83df-dba881570ad6",
+              "name": "subject",
+              "value": "={{ $json.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "b98dc792-661c-4e89-811d-f18343f4ac6e",
+              "name": "body",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "5b450cb2-4a28-4b58-aeda-8857db80df39",
+              "name": "from",
+              "value": "={{ $json.from.value[0].address }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        96,
+        240
+      ],
+      "id": "4dca7eb9-923d-451e-8fbb-28a4cd8950cd",
+      "name": "Normalize Email"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an email classification assistant.\n\nClassify the following customer email into exactly one of these categories:\n\n- sales\n- support\n- billing\n- feedback\n- spam\n- other\n\nRules:\n- Return only one category.\n- Use lowercase.\n- Do not add explanations.\n- Do not use Markdown.\n\nFrom:\n{{ $json.from }}\n\nSubject:\n{{ $json.subject }}\n\nEmail:\n{{ $json.body }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        320,
+        240
+      ],
+      "id": "57797596-513f-423f-a058-c45050ff7e8e",
+      "name": "Detect Email Intent",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YTrk6F91XsKxrFqm",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.content.parts[0].text }}",
+                    "rightValue": "sales",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "da2b927a-a902-49e2-a0ee-5c25d4758fa4"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "sales"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "3b9d1a71-147b-4fc5-baf7-9f1e6c47694a",
+                    "leftValue": "={{ $json.content.parts[0].text }}",
+                    "rightValue": "support",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "support"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "34c0260b-2109-4196-9ed1-f516d55a6ca3",
+                    "leftValue": "={{ $json.content.parts[0].text }}",
+                    "rightValue": "billing",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "billing"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c3cd68d9-a0c4-4c90-a57d-59b92e70048a",
+                    "leftValue": "={{ $json.content.parts[0].text }}",
+                    "rightValue": "feedback",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "feedback"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "03686e5e-3f5c-4774-bbec-a7dae9647ef0",
+                    "leftValue": "={{ $json.content.parts[0].text }}",
+                    "rightValue": "spam",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "spam"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b93a5f27-6f05-4d2a-821e-c1f13eeb363d",
+                    "leftValue": "={{ $json.content.parts[0].text }}",
+                    "rightValue": "other",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "other"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        176
+      ],
+      "id": "27a2db7c-3550-49c7-9c60-ba9040949107",
+      "name": "Route Email Intent"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Normalize Email').item.json.from }}",
+        "subject": "={{ \"Re: \" + $('Normalize Email').item.json.subject }}",
+        "message": "={{ $('Generate AI Reply').item.json.content.parts[0].text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1920,
+        -96
+      ],
+      "id": "77b4494d-e040-4a89-b850-fdf9ccbb51a3",
+      "name": "Send a message",
+      "webhookId": "c1391dd7-aaac-48b9-9d94-386eb32d91e8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ZdD2dTa7mZw2j6HY",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an experienced customer support representative.\n\nYour role:\n{{ $json.reply_style }}\n\nWrite a professional email reply.\n\nRequirements:\n- Reply in the same language used by the customer.\n- Be friendly and professional.\n- Answer the customer's request clearly.\n- If information is missing, politely ask for clarification.\n- Do not invent company policies or promises.\n- Keep the email between 80 and 180 words.\n- Do not use Markdown.\n- Return only the email body.\n- Generate a different reply than previous attempts.\n\nCustomer Email\n\nFrom:\n{{ $json.from }}\n\nSubject:\n{{ $json.subject }}\n\nEmail:\n{{ $json.body }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1120,
+        96
+      ],
+      "id": "2776a860-a9e2-4013-9ce6-aa84e3476f68",
+      "name": "Generate AI Reply",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YTrk6F91XsKxrFqm",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "1849095413",
+        "message": "=📧 Intent: {{ $('Detect Email Intent').item.json.content.parts[0].text }}\n\n----------------\n\n{{ $json.content.parts[0].text }}\n\n----------------\n\n1️⃣ Send\n2️⃣ Regenerate\n3️⃣ Cancel\n\n\n",
+        "responseType": "freeText",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1472,
+        32
+      ],
+      "id": "d2d1fb81-8036-474f-9e3f-cc6bee675f9e",
+      "name": "Send Draft to Telegram",
+      "webhookId": "6c957233-409a-40cc-b329-d212cb4c11d5",
+      "credentials": {
+        "telegramApi": {
+          "id": "n7euTXvwcI0UOgCd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ ($json.data?.text || \"\").trim() }}",
+                    "rightValue": "1",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "2b50f111-804f-4c42-a49d-ce1a63715a43"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Approve"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "06b5e978-64f7-41c6-8ea9-6ab47c9abf92",
+                    "leftValue": "={{ ($json.data?.text || \"\").trim() }}",
+                    "rightValue": "2",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "regenerate"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "f7bbb6c6-6dc4-4a3f-8233-2261f8753910",
+                    "leftValue": "={{ ($json.data?.text || \"\").trim() }}",
+                    "rightValue": "3",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cancel"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1696,
+        64
+      ],
+      "id": "289c72aa-d11c-4710-9619-7607c5c5be77",
+      "name": "Request Approval"
+    },
+    {
+      "parameters": {
+        "chatId": "1849095413",
+        "text": "✅ Email sent successfully.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2144,
+        -96
+      ],
+      "id": "9064c670-c832-4701-909f-31d00ef343cd",
+      "name": "Email sent",
+      "webhookId": "fd34d162-1cbb-44b9-8676-7419a662930e",
+      "credentials": {
+        "telegramApi": {
+          "id": "n7euTXvwcI0UOgCd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "1849095413",
+        "message": "❌ Invalid choice.\n\nReply with:\n\n1️⃣ Send Email\n2️⃣ Regenerate\n3️⃣ Cancel",
+        "responseType": "freeText",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1920,
+        288
+      ],
+      "id": "51550806-415d-416e-9649-fad003db65ed",
+      "name": "Re-ask for approval",
+      "webhookId": "edf15350-da3e-4dc6-aad8-8451a491543c",
+      "credentials": {
+        "telegramApi": {
+          "id": "n7euTXvwcI0UOgCd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "1849095413",
+        "text": "❌ Reply cancelled.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1920,
+        96
+      ],
+      "id": "887840df-427f-4090-a8d1-d64e2869a30c",
+      "name": "Reply Canceled",
+      "webhookId": "b60d1c80-3cf9-446b-9ea6-973da802e2ad",
+      "credentials": {
+        "telegramApi": {
+          "id": "n7euTXvwcI0UOgCd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "1849095413",
+        "text": "🚫 Spam email detected. No reply generated.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        896,
+        480
+      ],
+      "id": "ade55896-98b2-4574-b8d8-1e5b77c55e14",
+      "name": "Spam detected",
+      "webhookId": "fd34d162-1cbb-44b9-8676-7419a662930e",
+      "credentials": {
+        "telegramApi": {
+          "id": "n7euTXvwcI0UOgCd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ba287dd9-2369-4818-9c4d-e550f6c1a2d5",
+              "name": "reply_style",
+              "value": "Sales Consultant",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        896,
+        -288
+      ],
+      "id": "f14a14c0-8462-4ac4-a3a3-3b419a9efe3f",
+      "name": "Sales Style"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "458c422b-8da8-4365-a979-a4a1979304bf",
+              "name": "reply_style",
+              "value": "Technical support specialist",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        896,
+        -96
+      ],
+      "id": "c525b1d8-de89-453c-b914-4016638a83f8",
+      "name": "Support Style"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5d434d3e-9ef8-47d4-9f70-a382dd6f5807",
+              "name": "reply_style",
+              "value": "Customer success representative",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        896,
+        96
+      ],
+      "id": "c7f7c465-a4ea-42e6-ab99-b1710107cc19",
+      "name": "Feedback Style"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "525c2b4b-cb05-479d-9586-cab60248cdd3",
+              "name": "reply_style",
+              "value": "Billing specialist",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        896,
+        288
+      ],
+      "id": "0112c4a9-ed11-466d-907a-f7973784e977",
+      "name": "Billing Style"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5a24ed91-b51a-4ea9-ae66-c8245a9b0a49",
+              "name": "reply_style",
+              "value": "Professional customer service representative",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        896,
+        672
+      ],
+      "id": "a04dd12d-477d-4bb3-b9b6-b3cb0e248a81",
+      "name": "Default Style"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Email": {
+      "main": [
+        [
+          {
+            "node": "Detect Email Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Email Intent": {
+      "main": [
+        [
+          {
+            "node": "Route Email Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Email Intent": {
+      "main": [
+        [
+          {
+            "node": "Sales Style",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Support Style",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Billing Style",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Feedback Style",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Spam detected",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Default Style",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate AI Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Draft to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Draft to Telegram": {
+      "main": [
+        [
+          {
+            "node": "Request Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Approval": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate AI Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply Canceled",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Re-ask for approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Email sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-ask for approval": {
+      "main": [
+        [
+          {
+            "node": "Request Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sales Style": {
+      "main": [
+        [
+          {
+            "node": "Generate AI Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Support Style": {
+      "main": [
+        [
+          {
+            "node": "Generate AI Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Feedback Style": {
+      "main": [
+        [
+          {
+            "node": "Generate AI Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Billing Style": {
+      "main": [
+        [
+          {
+            "node": "Generate AI Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Style": {
+      "main": [
+        [
+          {
+            "node": "Generate AI Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "7874a586-653e-4eef-8fce-fe2f6d93074e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3f614d33b6cfc6853597d9b99af05f3ee9b93fb4b4bd4a133af35c1b20d95915"
+  },
+  "nodeGroups": [],
+  "id": "PPVVtkqtWj1dR2Nv",
+  "tags": []
+}
