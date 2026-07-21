@@ -1,0 +1,8 @@
+{
+  "language": "English",
+  "prompt": "Photorealistic image of a bright, modern family home interior in Makkah, natural sunlight, two professional cleaners working efficiently, clean and tidy environment, realistic household cleaning tools, warm neutral colors, suitable for Facebook and Instagram, no text, no logos, no watermarks.",
+  "negative_prompt": "No text, no logos, no watermarks, no brand labels, no advertising overlays, no unrealistic objects or effects.",
+  "aspect_ratio": "4:5",
+  "resolution": "1080x1350",
+  "style": "photorealistic"
+}

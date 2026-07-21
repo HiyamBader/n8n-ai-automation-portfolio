@@ -1,0 +1,660 @@
+{
+  "name": "AI Content Marketing Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ]
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        512
+      ],
+      "id": "c439f702-6222-4131-a3e3-eef3952f347c",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "name": "Replace Me",
+      "typeVersion": 1,
+      "position": [
+        0,
+        1024
+      ],
+      "id": "cd072f33-940b-4d25-a488-11cab674a7ce",
+      "placeholder": true
+    },
+    {
+      "parameters": {
+        "url": "https://serpapi.com/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "engine",
+              "value": "google"
+            },
+            {
+              "name": "gl",
+              "value": "sa"
+            },
+            {
+              "name": "hl",
+              "value": "ar"
+            },
+            {
+              "name": "q",
+              "value": "={{$json.business}} {{$json.city}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        448,
+        512
+      ],
+      "id": "ecff1a26-2559-46e9-957b-8f01cb65d2ff",
+      "name": "Keyword API",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "Nx3bGHBGd1DQhG3r",
+          "name": "Query Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "clients",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "active"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        224,
+        512
+      ],
+      "id": "34b7adcf-fd07-4d78-a2ac-2c5452f03af5",
+      "name": "Get Client",
+      "credentials": {
+        "supabaseApi": {
+          "id": "PP2EHeI9luyHbadB",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        688,
+        736
+      ],
+      "id": "b67b387b-f051-4949-b01f-6a96ae0577f0",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"keyword\": \"خدمات تنظيف منازل بمكة\",\n  \"reason\": \"الكلمة المفتاحية مرتبطة مباشرة بخدمات العميل وتستهدف الباحثين في مدينة مكة.\",\n  \"selected_title\": \"خدمات تنظيف منازل بمكة: دليل كامل لاختيار شركة تنظيف موثوقة\",\n  \"alternative_titles\": [\n    \"قائمة أسعار خدمات تنظيف منازل بمكة ونصائح لاختيار العرض الأنسب\",\n    \"خدمات تنظيف منازل بمكة: الفرق بين الخدمة بالساعة والحزم الشهرية وكيف تختار\"\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        816,
+        736
+      ],
+      "id": "cbfcf99a-8762-4e54-8a1d-e7ef121df9d0",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1040,
+        736
+      ],
+      "id": "563a85e6-9aa7-4ee2-bc80-55b886a772e0",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=أنتِ خبيرة SEO وتسويق محتوى محلي.\n\nمهمتك هي اختيار أفضل كلمة مفتاحية لمقال هذا الأسبوع بناءً على نشاط العميل، المدينة، واقتراحات البحث من Google.\n\n## بيانات العميل\nاسم الشركة: {{ $('Get Client').item.json.company_name }}\nالنشاط: {{ $('Get Client').item.json.business }}\nالمدينة: {{ $('Get Client').item.json.city }}\nاللغة: {{ $('Get Client').item.json.language }}\n\n## اقتراحات البحث\n{{ JSON.stringify($json.related_searches) }}\n\n## التعليمات\n\n1. اختاري أفضل كلمة مفتاحية مناسبة للعميل.\n2. اقترحي 3 عناوين SEO جذابة مبنية على الكلمة المفتاحية.\n3. اختاري أفضل عنوان من بينها وضعِيه في الحقل `selected_title`.\n4. ضعي العنوانين الآخرين في `alternative_titles`.\n5. اجعلي `reason` مختصرًا (جملة أو جملتين فقط).\n6. لا تذكري أي معلومات غير موجودة في البيانات، مثل حجم البحث أو معدل التحويل، إلا إذا كانت موجودة فعلًا في نتائج البحث.\n7. اجعلي العناوين طبيعية وجذابة ومناسبة للـSEO المحلي.\n8. استخدمي Structured Output Parser فقط، ولا تُرجعي أي نص خارج البنية المطلوبة.",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        672,
+        512
+      ],
+      "id": "3c955bf1-6a9c-4671-ab51-adf57471d398",
+      "name": "AI Content Strategist"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=أنت كاتب محتوى SEO محترف ومتخصص في كتابة المقالات المحلية.\n\nمهمتك كتابة مقال احترافي باللغة {{ $('Get Client').item.json.language }}.\n\n## معلومات العميل\n\nاسم الشركة:\n{{ $('Get Client').item.json.company_name }}\n\nالنشاط:\n{{ $('Get Client').item.json.business }}\n\nالمدينة:\n{{ $('Get Client').item.json.city }}\n\n## بيانات المقال\n\nالكلمة المفتاحية:\n{{ $('AI Content Strategist').item.json.output.keyword }}\n\nعنوان المقال:\n{{ $('AI Content Strategist').item.json.output.selected_title }}\n\nسبب اختيار الموضوع:\n{{ $('AI Content Strategist').item.json.output.reason }}\n\n## التعليمات\n\n- اكتب مقالاً أصلياً وليس منسوخاً.\n- اجعل الكلمة المفتاحية تظهر بشكل طبيعي.\n- ابدأ بمقدمة جذابة.\n- استخدم عناوين H2 و H3.\n- أضف نقاطاً وقوائم عند الحاجة.\n- اختم المقال بخاتمة مع دعوة لاتخاذ إجراء (CTA) تشجع القارئ على التواصل مع الشركة.\n- لا تخترع معلومات عن الشركة.\n- لا تذكر أي معلومات غير موجودة.\n- اكتب بلغة طبيعية وسهلة القراءة.",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1024,
+        512
+      ],
+      "id": "1106d044-b2c6-4981-bfe1-19c50a349672",
+      "name": "AI Article Writer"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"title\": \"خدمات تنظيف المنازل بمكة: أفضل الأسعار وجودة مضمونة من CleanPro\",\n  \"meta_description\": \"تعرف على أفضل خدمات تنظيف المنازل في مكة وكيف تختار الشركة المناسبة مع CleanPro.\",\n  \"article\": \"المقال بالكامل...\",\n  \"cta\": \"تواصل مع CleanPro اليوم للحصول على عرض سعر مجاني.\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1168,
+        736
+      ],
+      "id": "44b68a59-af37-415a-b309-948a2265703e",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=أنتِ خبيرة في كتابة محتوى السوشال ميديا للشركات المحلية.\n\nمهمتك هي تحويل المقال التالي إلى منشورات جاهزة للنشر على Facebook وInstagram.\n\n## معلومات العميل\n\nاسم الشركة:\n{{ $('Get Client').item.json.company_name }}\n\nالنشاط:\n{{ $('Get Client').item.json.business }}\n\nالمدينة:\n{{ $('Get Client').item.json.city }}\n\nاللغة:\n{{ $('Get Client').item.json.language }}\n\n## بيانات المقال\n\nعنوان المقال:\n{{ $('AI Article Writer').item.json.output.title }}\n\nالمقال:\n{{ $('AI Article Writer').item.json.output.article }}\n\nالدعوة لاتخاذ إجراء:\n{{ $('AI Article Writer').item.json.output.cta }}\n\n## التعليمات\n\n- اكتب منشور Facebook متوسط الطول ومفيد.\n- اكتب منشور Instagram أقصر وأكثر جاذبية.\n- استخدم لغة طبيعية تناسب نشاط العميل.\n- اختم كل منشور بالدعوة لاتخاذ إجراء (CTA) الموجودة أعلاه.\n- أضف بين 3 و5 هاشتاغات مناسبة لمنشور Instagram.\n- استخدم الإيموجي باعتدال.\n- استخدم Structured Output Parser فقط، ولا تُرجع أي نص خارج البنية المطلوبة.\n\n## قواعد صارمة\n\nاعتمد فقط على:\n1. بيانات العميل.\n2. عنوان المقال.\n3. محتوى المقال.\n4. الدعوة لاتخاذ إجراء (CTA).\n\nممنوع تمامًا:\n- اختراع خدمات غير مذكورة.\n- اختراع عروض أو خصومات.\n- اختراع أسعار.\n- اختراع سياسات مثل الضمان أو الإلغاء أو خدمة ما بعد البيع.\n- اختراع وسائل تواصل أو روابط.\n- اختراع ساعات عمل أو مواقع أو أرقام هاتف.\n- إضافة أي معلومة غير موجودة في المقال أو بيانات العميل.\n\nإذا لم تكن المعلومة موجودة، فلا تذكرها.\n\nإذا لم تكن متأكدًا من معلومة، فتجاهلها.\n\nيجب أن تكون جميع المعلومات في المنشورات قابلة للاستخراج أو إعادة الصياغة من المقال أو بيانات العميل فقط.\n\nلا تستخدم معرفتك العامة لإضافة تفاصيل عن هذا النوع من الأعمال.",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1376,
+        0
+      ],
+      "id": "d242702f-355c-4103-9356-947fe797f251",
+      "name": "AI Social Media Writer"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"facebook_post\": \"هل تبحث عن شركة تنظيف موثوقة في مكة؟ تعرف على أهم النصائح لاختيار الخدمة المناسبة لمنزلك. تواصل مع CleanPro الآن للاستفسار وطلب عرض سعر.\",\n  \"instagram_caption\": \"منزل أنظف ووقت أكثر لك ✨ تعرف على أهم النصائح لاختيار شركة تنظيف موثوقة في مكة. تواصل مع CleanPro للحجز والاستفسار.\",\n  \"hashtags\": [\n    \"#تنظيف_مكة\",\n    \"#تنظيف_منازل\",\n    \"#شركة_تنظيف\",\n    \"#CleanPro\"\n  ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1520,
+        224
+      ],
+      "id": "4737187d-7a3c-4b1f-a1d9-c051e304a737",
+      "name": "Structured Output Parser2"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1392,
+        224
+      ],
+      "id": "55e00d85-8ee6-43ea-812a-ca34e367a23d",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v25.0/me/photos",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "source",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $('AI Social Media Writer').item.json.output.facebook_post }}"
+            },
+            {
+              "name": "access_token",
+              "value": "EAAV9WwOmjW4BR7pDzq46YDlXEra18EtvLX8lGfOPxuSnyLhHworgZB49u96wlQDDKm4g5R0flbv4t8vJrMHN4FSdM9ZAvQZCgN5AgbyoEZCf1vZAZC1R0daDPHXt5vIs4rx2iOmCZAlNkyRzR76xBiB51BTXE5gqu1R43PQwI8gyf5ZCnpARu17aRgaZBJ7kpKbsC"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2272,
+        368
+      ],
+      "id": "fd953648-1cb9-4046-97a8-ccfd63308cca",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "folderId": "11V_BcmR3P9fVA--piQ2zYfX8dQjRUYer",
+        "title": "={{ $('AI Article Writer').item.json.output.title }}"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        800
+      ],
+      "id": "7487d7d6-e243-45a0-a207-ae9cb557493f",
+      "name": "Create a document",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "cbqnKTf3Mt2kXmV3",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentURL": "={{ $json.id }}",
+        "actionsUi": {
+          "actionFields": [
+            {
+              "action": "insert",
+              "text": "={{ $('AI Article Writer').item.json.output.article }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        1728,
+        800
+      ],
+      "id": "53fd94bc-7f46-43c9-b830-6f7e20d61fce",
+      "name": "Update a document",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "cbqnKTf3Mt2kXmV3",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=أنت خبير في كتابة Prompts لتوليد صور تسويقية بالذكاء الاصطناعي.\n\nمهمتك هي إنشاء Prompt واحد باللغة الإنجليزية لإنتاج صورة احترافية تناسب المقال والشركة.\n\n## معلومات العميل\n\nاسم الشركة:\n{{ $('Get Client').item.json.company_name }}\n\nالنشاط:\n{{ $('Get Client').item.json.business }}\n\nالمدينة:\n{{ $('Get Client').item.json.city }}\n\n## بيانات المقال\n\nالعنوان:\n{{ $('AI Article Writer').item.json.output.title }}\n\nالمقال:\n{{ $('AI Article Writer').item.json.output.article }}\n\n## التعليمات\n\n- اكتب Prompt باللغة الإنجليزية فقط.\n- صف مشهدًا واقعيًا يناسب عنوان المقال.\n- اجعل الصورة مناسبة لمنشور Facebook وInstagram.\n- استخدم أسلوب photorealistic.\n- إضاءة طبيعية واحترافية.\n- جودة عالية.\n- لا تضع أي نص داخل الصورة.\n- لا تضع شعارات أو علامات مائية.\n- لا تذكر اسم الشركة داخل الصورة.\n- لا تخترع خدمات غير موجودة في المقال.\n- ركز على المشهد وليس على كتابة إعلان.\n\nأرجع النتيجة باستخدام Structured Output Parser فقط.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1376,
+        400
+      ],
+      "id": "d584f8ae-7cb3-4b95-9f92-08fdaad6b0e2",
+      "name": "AI Image Prompt Writer"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1456,
+        624
+      ],
+      "id": "cd3333c6-d4ca-4510-a9df-c1de733c99b5",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-image-1-mini"
+        },
+        "prompt": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        1728,
+        400
+      ],
+      "id": "0101a001-8943-416e-a7e7-0380297d509e",
+      "name": "Generate an image",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2128,
+        16
+      ],
+      "id": "a86d2cb3-de64-4244-a1c6-3a9b6b9bf493",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Client",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Client": {
+      "main": [
+        [
+          {
+            "node": "Keyword API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keyword API": {
+      "main": [
+        [
+          {
+            "node": "AI Content Strategist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Content Strategist",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Content Strategist",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Article Writer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Content Strategist": {
+      "main": [
+        [
+          {
+            "node": "AI Article Writer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Article Writer",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Article Writer": {
+      "main": [
+        [
+          {
+            "node": "AI Social Media Writer",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create a document",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Image Prompt Writer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser2": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Social Media Writer",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Social Media Writer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Social Media Writer": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        []
+      ]
+    },
+    "Create a document": {
+      "main": [
+        [
+          {
+            "node": "Update a document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Image Prompt Writer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Image Prompt Writer": {
+      "main": [
+        [
+          {
+            "node": "Generate an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate an image": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ef1a02cd-0f91-47db-9d42-9d603c9c7926",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5abbed3cfe8430dde0054ceb163c33f060cdd104d4143bbfbd7095957a92e201"
+  },
+  "nodeGroups": [],
+  "id": "hQVpw8H0Y3EDUuPv",
+  "tags": []
+}
