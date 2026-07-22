@@ -1,0 +1,570 @@
+{
+  "name": "AI Customer Support Email Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        128
+      ],
+      "id": "0dc69f1d-08eb-4cff-b3a9-c7a24cea8ca9",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "7yEFVBVDRhdWeVAC",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an experienced Customer Support Email Classifier.\n\nYour task is to analyze incoming customer emails and classify them accurately.\n\n## Email Information\n\nSubject:\n{{ $json.subject }}\n\nFrom:\n{{ $json.from }}\n\nEmail Body:\n{{ $json.text }}\n\n---\n\n## Instructions\n\nAnalyze the email carefully and determine:\n\n1. Category:\nChoose ONLY one of the following:\n\n- Sales\n- Support\n- Complaint\n- Refund\n- Partnership\n- Spam\n- Other\n\n2. Priority\n\nChoose ONLY one:\n\n- Low\n- Medium\n- High\n- Urgent\n\n3. Summary\n\nWrite a short summary (maximum 2 sentences) describing the customer's request.\n\n4. Requires Human\n\nReturn:\n\ntrue\n\nonly if:\n\n- Legal issues\n- Refund disputes\n- Angry customer\n- VIP customer\n- Threats\n- Sensitive situations\n\nOtherwise return:\n\nfalse\n\n---\n\n## Important Rules\n\n- Base your classification ONLY on the email content.\n- Do not assume information that is not provided.\n- Do not invent customer details.\n- Keep the summary concise and factual.\n- Always return valid JSON.\n- Follow the Structured Output Parser exactly.",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        128
+      ],
+      "id": "995d4715-84ac-4351-b992-fb94cdafe64c",
+      "name": "AI Email Classifier"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"category\": \"Support\",\n  \"priority\": \"High\",\n  \"summary\": \"Customer cannot access their account.\",\n  \"requires_human\": false\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        368,
+        352
+      ],
+      "id": "f5318b67-2d02-40ea-b197-f94e4308c2f5",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        352
+      ],
+      "id": "8c2764f6-86f9-48fb-8ab0-b7747f91bfba",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an experienced Customer Support Representative.\n\nYour task is to write a professional, friendly, and helpful email reply.\n\n## Customer Email\n\nFrom:\n{{ $('Gmail Trigger').item.json.from }}\n\nSubject:\n{{ $('Gmail Trigger').item.json.subject }}\n\nEmail:\n{{ $('Gmail Trigger').item.json.text }}\n\n---\n\n## AI Classification\n\nCategory:\n{{ $('AI Email Classifier').item.json.output.category }}\n\nPriority:\n{{ $('AI Email Classifier').item.json.output.priority }}\n\nSummary:\n{{ $('AI Email Classifier').item.json.output.summary }}\n\nRequires Human:\n{{ $('AI Email Classifier').item.json.output.requires_human }}\n\n---\n\n## Instructions\n\nWrite an email reply that:\n\n- Is polite and professional.\n- Directly addresses the customer's request.\n- Matches the detected category.\n- Do not promise refunds, discounts, or actions that were not requested.\n- Do not invent information.\n- Keep the email concise and natural.\n- Return ONLY valid JSON.\n- Follow the Structured Output Parser exactly.",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        800,
+        0
+      ],
+      "id": "678d040f-22f4-47f9-b68a-54739147bc8a",
+      "name": "AI Reply Writer"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        816,
+        224
+      ],
+      "id": "645f1a4f-6ed7-41a2-bee7-cd75c1c390e5",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"subject\": \"string\",\n  \"reply\": \"string\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        944,
+        224
+      ],
+      "id": "3ee35374-1eea-4928-9e02-143053ca8a8e",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $json.output.subject }}",
+        "message": "={{ $json.output.reply }}",
+        "options": {
+          "sendTo": "={{ $('Gmail Trigger').item.json.headers.from }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1152,
+        0
+      ],
+      "id": "96667a4c-6a42-43eb-89e9-c93c86dc969f",
+      "name": "Create a draft",
+      "webhookId": "73930ab9-24e8-4ae8-bb52-6581fc976807",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "7yEFVBVDRhdWeVAC",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.category }}",
+                    "rightValue": "Sales",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "3636a91e-959e-4f2a-94cc-fc499029a8e3"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Sales"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "cf25bf53-033f-4a4a-b300-3d643d507d22",
+                    "leftValue": "={{ $json.output.category }}",
+                    "rightValue": "Support",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Support"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d92ca554-58ad-4bcb-bd1b-cd98d7a98615",
+                    "leftValue": "={{ $json.output.category }}",
+                    "rightValue": "Complaint",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Complaint"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ddebb76c-ac53-411a-842b-9afaac65047b",
+                    "leftValue": "={{ $json.output.category }}",
+                    "rightValue": "Refund",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Refund"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c214bd14-2973-4acb-8c78-763d2c2861f2",
+                    "leftValue": "={{ $json.output.category }}",
+                    "rightValue": "Partnership",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Partnership"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "2931086e-6ed2-4e07-82e1-1c68ae58db24",
+                    "leftValue": "={{ $json.output.category }}",
+                    "rightValue": "Spam",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Spam"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "8ffeace5-8f23-4adf-9cca-1d2f6c6dfdf3",
+                    "leftValue": "={{ $json.output.category }}",
+                    "rightValue": "Other",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Other"
+            }
+          ]
+        },
+        "looseTypeValidation": "=",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        576,
+        48
+      ],
+      "id": "5e85916e-d883-4b67-b13f-0aea833adfcf",
+      "name": "Category Router"
+    },
+    {
+      "parameters": {
+        "tableId": "email_support_logs",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "sender_email",
+              "fieldValue": "={{ $('Gmail Trigger').item.json.from.value[0].address }}"
+            },
+            {
+              "fieldId": "subject",
+              "fieldValue": "={{ $('Gmail Trigger').item.json.headers.subject }}"
+            },
+            {
+              "fieldId": "category",
+              "fieldValue": "={{ $('AI Email Classifier').item.json.output.category }}"
+            },
+            {
+              "fieldId": "priority",
+              "fieldValue": "={{ $('AI Email Classifier').item.json.output.priority }}"
+            },
+            {
+              "fieldId": "summary",
+              "fieldValue": "={{ $('AI Email Classifier').item.json.output.summary }}"
+            },
+            {
+              "fieldId": "requires_human",
+              "fieldValue": "={{ $('AI Email Classifier').item.json.output.requires_human }}"
+            },
+            {
+              "fieldId": "draft_subject",
+              "fieldValue": "={{ $('AI Reply Writer').item.json.output.subject }}"
+            },
+            {
+              "fieldId": "draft_reply",
+              "fieldValue": "={{ $('AI Reply Writer').item.json.output.reply }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "draft_created"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1376,
+        128
+      ],
+      "id": "d5251b03-0e06-4aa6-8a39-6ef43a10cd57",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "PP2EHeI9luyHbadB",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Email Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Email Classifier",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Email Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Email Classifier": {
+      "main": [
+        [
+          {
+            "node": "Category Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Reply Writer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Reply Writer",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Reply Writer": {
+      "main": [
+        [
+          {
+            "node": "Create a draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Category Router": {
+      "main": [
+        [
+          {
+            "node": "AI Reply Writer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Reply Writer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Reply Writer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Reply Writer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Reply Writer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a draft": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "eddda426-120a-4714-8184-2c8d09590c55",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5abbed3cfe8430dde0054ceb163c33f060cdd104d4143bbfbd7095957a92e201"
+  },
+  "nodeGroups": [],
+  "id": "eTpLNwn5TZSEdNLk",
+  "tags": []
+}

@@ -1,0 +1,10 @@
+[
+  {
+    "output": {
+      "category": "Support",
+      "priority": "High",
+      "summary": "Customer reports that their software is broken and is requesting help to resolve the issue.",
+      "requires_human": false
+    }
+  }
+]
