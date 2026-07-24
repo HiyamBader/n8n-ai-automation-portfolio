@@ -1,0 +1,758 @@
+{
+  "name": "AI WhatsApp Customer Support Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-support",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        -448
+      ],
+      "id": "bd40564d-66be-4f9a-b07e-cf03e9b55604",
+      "name": "Webhook",
+      "webhookId": "9f193629-4864-402f-886e-2989213840d0"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "66526371-b3bf-43d8-9287-18374be89770",
+              "name": "phone",
+              "value": "={{ $json.body.data.messages.key.cleanedSenderPn }}",
+              "type": "string"
+            },
+            {
+              "id": "e50c2550-8e6f-46f8-9d10-2bc17ea9507e",
+              "name": "name",
+              "value": "={{ $json.body.data.messages.pushName }}",
+              "type": "string"
+            },
+            {
+              "id": "661cbec6-67fe-475d-853c-fc227ffce045",
+              "name": "fromMe",
+              "value": "={{ $json.body.data.messages.key.fromMe }}",
+              "type": "boolean"
+            },
+            {
+              "id": "dbbba710-27fa-4f2b-a6b8-fa19d6eca898",
+              "name": "senderId",
+              "value": "={{ $json.body.data.messages.remoteJid }}",
+              "type": "string"
+            },
+            {
+              "id": "63cf9df3-d10a-4a91-8a99-d89322da1085",
+              "name": "messageType",
+              "value": "={{  $json.body.data.messages.message.imageMessage ? \"image\" : $json.body.data.messages.message.audioMessage ? \"audio\" : $json.body.data.messages.message.documentMessage ? \"document\" : \"text\" }}",
+              "type": "string"
+            },
+            {
+              "id": "27cbaeb4-040a-49f0-8a5b-588f8821f505",
+              "name": "mediaKey",
+              "value": "={{ $json.body.data.messages.message.audioMessage.mediaKey }}",
+              "type": "string"
+            },
+            {
+              "id": "d2cdf687-4ef7-44e9-a660-3ce85f768abe",
+              "name": "mimeType",
+              "value": "={{ $json.body.data.messages.message.audioMessage.mimetype }}",
+              "type": "string"
+            },
+            {
+              "id": "4551e39c-2bec-468e-b1e3-3f106ff6a57c",
+              "name": "messageId",
+              "value": "={{ $json.body.data.messages.key.id }}",
+              "type": "string"
+            },
+            {
+              "id": "34c33137-867b-4d70-813b-1e1be0aa58cc",
+              "name": "input",
+              "value": "={{\n  $json.body.data.messages.message.conversation ||\n  $json.body.data.messages.message.audioMessage?.url ||\n  null\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        -448
+      ],
+      "id": "be0c3b3b-ec8d-4f2a-8711-c759e31be9cb",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "81ae63b6-c4dd-44e3-8730-d867d029d7f0",
+              "leftValue": "={{ $json.fromMe }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        -448
+      ],
+      "id": "0ac018ec-3486-4bd4-be32-2e4a82ed0cad",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Customer Name: {{ $json.name }}\n\nCustomer Message:\n{{ $('Edit Fields').item.json.input }}",
+        "options": {
+          "systemMessage": "You are a professional WhatsApp customer support assistant.\n\nYour responsibilities:\n- Reply in the same language as the customer.\n- Be polite, friendly, and professional.\n- Keep your answers clear and concise.\n- If you don't know the answer, say you don't have enough information and recommend contacting a human agent.\n- Never make up facts.\n- Do not mention that you are an AI unless asked."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1024,
+        -704
+      ],
+      "id": "1a5d9384-1cb1-41aa-aef7-318fb4bf4907",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1024,
+        -560
+      ],
+      "id": "568173e0-d60b-48c2-a605-31485bea8b92",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messageType }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "2d2723d9-82c6-4f9d-989b-01b6ce5ee60f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "5f952cd8-0ef9-48d4-8741-65db8c1b90e3",
+                    "leftValue": "={{ $json.messageType }}",
+                    "rightValue": "audio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        624,
+        -448
+      ],
+      "id": "7e278d64-47b8-4d4e-8f2f-55fc69acf3cd",
+      "name": "Message Type Router"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://wasenderapi.com/api/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 03327bc4a2840e02079f30b2859bac4a944bda680d5fab68e74f45de3dd4d48f"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $('Edit Fields').item.json.senderId }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1376,
+        -704
+      ],
+      "id": "cc7ae085-0b40-495b-bb92-84bd67825706",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.wasenderapi.com/api/decrypt-media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 03327bc4a2840e02079f30b2859bac4a944bda680d5fab68e74f45de3dd4d48f"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"data\": {\n    \"messages\": {\n      \"key\": {\n        \"id\": \"{{ $json.messageId }}\"\n      },\n      \"message\": {\n        \"audioMessage\": {\n          \"url\": \"{{ $json.input }}\",\n          \"mimetype\": \"{{ $json.mimeType }}\",\n          \"mediaKey\": \"{{ $json.mediaKey }}\"\n        }\n      }\n    }\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        960,
+        -304
+      ],
+      "id": "936e7be7-3371-4793-92de-88ba45273580",
+      "name": "Decrypt Audio File"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.publicUrl }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1248,
+        -304
+      ],
+      "id": "e10ba017-475e-4b2d-882b-34aaa9d44a3d",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1472,
+        -304
+      ],
+      "id": "324746a0-87d7-42a8-8c00-7bd4efcc90e9",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ckg3f7JrQSlFBzAb",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Customer Name: {{ $('Edit Fields').item.json.name }}\n\nCustomer Message:\n{{ $json.content.parts[0].text }}",
+        "options": {
+          "systemMessage": "You are a professional WhatsApp customer support assistant.\n\nYour responsibilities:\n- Reply in the same language as the customer.\n- Be polite, friendly, and professional.\n- Keep your answers clear and concise.\n- If you don't know the answer, say you don't have enough information and recommend contacting a human agent.\n- Never make up facts.\n- Do not mention that you are an AI unless asked."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1696,
+        -304
+      ],
+      "id": "1a70399d-a618-4de3-9bef-69aa1c7af564",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1776,
+        -80
+      ],
+      "id": "0614baf6-474c-4e1a-b268-80ab40e79ea5",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ckg3f7JrQSlFBzAb",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "input": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        2048,
+        -304
+      ],
+      "id": "6dbd4522-af27-4cfd-889d-fc15d2a8602e",
+      "name": "Generate audio",
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2272,
+        -304
+      ],
+      "id": "cea09a9c-a9fc-444e-92bf-ad8b6a115810",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "dWwKIdLX5ReNZd0b",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "reader",
+            "type": "anyone"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2496,
+        -304
+      ],
+      "id": "187b7c31-12d9-49c6-9f17-d10a43fbebd2",
+      "name": "Share file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "dWwKIdLX5ReNZd0b",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.wasenderapi.com/api/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 03327bc4a2840e02079f30b2859bac4a944bda680d5fab68e74f45de3dd4d48f"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $('Edit Fields').item.json.senderId }}"
+            },
+            {
+              "name": "audioUrl",
+              "value": "={{ $('Upload file').item.json.webContentLink }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2720,
+        -304
+      ],
+      "id": "13aecfd9-e0f7-4270-a8d5-49b41a739b49",
+      "name": "HTTP Request2"
+    },
+    {
+      "parameters": {
+        "content": "Message Detection\n\nText\nAudio\n(Image - Coming Soon)\n(Document - Coming Soon)",
+        "height": 192,
+        "width": 624,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -48,
+        -656
+      ],
+      "typeVersion": 1,
+      "id": "cf283d84-9fe0-4e46-ace8-7220c84d7e45",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "Workflow overview\n\nFeatures:\n✅ Text Messages\n✅ Voice Messages\n✅ AI Responses\n✅ Voice Replies\n\nBuilt with:\nn8n • Gemini • Wasender • Google Drive",
+        "height": 272,
+        "width": 528,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -80,
+        -1024
+      ],
+      "typeVersion": 1,
+      "id": "ccece222-9137-45cf-b4c0-1b9b95ae4249",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "Text Processing\n\nCustomer Message\n↓\nAI Agent\n↓\nSend Text Reply",
+        "height": 208,
+        "width": 960,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        720,
+        -976
+      ],
+      "typeVersion": 1,
+      "id": "a5dc4aa7-79ec-474d-bfde-9997ae12e8fd",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "Voice Processing\n\nDecrypt Audio\n↓\nDownload Audio\n↓\nSpeech-to-Text\n↓\nAI Agent\n↓\nText-to-Speech\n↓\nUpload\n↓\nShare\n↓\nSend Voice Reply",
+        "height": 496,
+        "width": 288
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        608,
+        -208
+      ],
+      "typeVersion": 1,
+      "id": "733c6b6e-95c2-4a83-8fc5-5335ac9ed1d4",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "Media Upload & Sharing\n\nGenerate public link\nShare file",
+        "width": 336,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2256,
+        -480
+      ],
+      "typeVersion": 1,
+      "id": "26790d72-f12c-4fe2-9c57-467586b5a7c2",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "Response Delivery\nResponse sent successfully ✅",
+        "height": 112,
+        "width": 272,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2704,
+        -432
+      ],
+      "typeVersion": 1,
+      "id": "f459bf69-10f5-4c6e-b26c-5c8a7ebd9029",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Message Type Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message Type Router": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Decrypt Audio File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decrypt Audio File": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Generate audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate audio": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Share file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Share file": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "0e6b43f7-2d89-4f9d-b743-a3a877ecf042",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5abbed3cfe8430dde0054ceb163c33f060cdd104d4143bbfbd7095957a92e201"
+  },
+  "nodeGroups": [],
+  "id": "PW3Bw7rN7BHJgAga",
+  "tags": []
+}
