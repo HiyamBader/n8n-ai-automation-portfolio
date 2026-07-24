@@ -94,7 +94,7 @@ ai-whatsapp-customer-support-agent/
 
 ## 📸 Workflow Preview
 
-![Workflow](assets/workflow.png)
+![Workflow](assets/workflow.PNG)
 
 ---
 
@@ -107,7 +107,7 @@ ai-whatsapp-customer-support-agent/
 
 ### 🎙️ Voice Conversation
 
-![Voice Demo](assets/voice-demo.gif)
+![Voice Demo](assets/audio-demo.gif)
 ---
 
 ## 📄 License
