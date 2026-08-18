@@ -1,0 +1,981 @@
+{
+  "name": "AI Appointment Booking Agent - Portfolio v2",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -688,
+        288
+      ],
+      "id": "42479762-9e39-4146-829d-3e7339ffc85e",
+      "name": "Google Gemini Chat Model"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.senderId }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -560,
+        288
+      ],
+      "id": "a1ec88f9-e086-4219-8f82-27ad92e11b67",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"service\": \"dental cleaning\",\n  \"date\": \"2026-08-20\",\n  \"time\": \"16:00\",\n  \"customerName\": \"Customer Name\",\n  \"confirmed\": false\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -432,
+        288
+      ],
+      "id": "93a07f41-00b9-49bc-990c-d5b6d80f19bd",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "resource": "calendar",
+        "calendar": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_CALENDAR_ID",
+          "mode": "list",
+          "cachedResultName": "YOUR_GOOGLE_CALENDAR_NAME"
+        },
+        "timeMin": "={{ DateTime.fromISO($json.output.date + 'T' + $json.output.time, { zone: 'Asia/Jerusalem' }).toISO() }}",
+        "timeMax": "={{ DateTime.fromISO($json.output.date + 'T' + $json.output.time, { zone: 'Asia/Jerusalem' }).plus({ hours: 1 }).toISO() }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        672,
+        -240
+      ],
+      "id": "3d988272-e44d-4b2f-a254-fa7dc036cf12",
+      "name": "Get availability in a calendar"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_CALENDAR_ID",
+          "mode": "list",
+          "cachedResultName": "YOUR_GOOGLE_CALENDAR_NAME"
+        },
+        "start": "={{ DateTime.fromISO( $('AI Agent').item.json.output.date+ 'T' + $('AI Agent').item.json.output.time, { zone: 'Asia/Jerusalem' }).toISO() }}",
+        "end": "={{ DateTime.fromISO($('AI Agent').item.json.output.date + 'T' + $('AI Agent').item.json.output.time, { zone: 'Asia/Jerusalem' }).plus({ hours: 1 }).toISO() }}",
+        "additionalFields": {
+          "description": "={{  'Customer: ' +  (    $('AI Agent').item.json.output.customerName ||    $('normalize whatsapp message').item.json.name  ) +  '\\nPhone: ' +  $('normalize whatsapp message').item.json.phone +  '\\nWhatsApp ID: ' +  $('normalize whatsapp message').item.json.senderId +  '\\n\\nCreated by AI Appointment Booking Agent'}}",
+          "summary": "={{  $('AI Agent').item.json.output.service +  ' - ' +  (    $('AI Agent').item.json.output.customerName ||    $('normalize whatsapp message').item.json.name  )}}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        1120,
+        -336
+      ],
+      "id": "f45a623e-5f06-490e-a21f-1ff9f7485b79",
+      "name": "Create an event"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "994cfba0-7060-459a-b2b8-5acfbde30a4c",
+              "name": "senderId",
+              "value": "={{ $json.body.data.messages.key.remoteJid }}",
+              "type": "string"
+            },
+            {
+              "id": "8951e6e4-673a-42f0-ae00-576704cf9838",
+              "name": "name",
+              "value": "={{ $json.body.data.messages.pushName }}",
+              "type": "string"
+            },
+            {
+              "id": "b4589c5c-60ac-4156-9457-2a047db97d83",
+              "name": "message",
+              "value": "={{\n  $json.body.data.messages.message.conversation ||\n  $json.body.data.messages.message.extendedTextMessage?.text ||\n  ''\n}}",
+              "type": "string"
+            },
+            {
+              "id": "e312fdd5-c8ea-480f-966d-06d8c24f2c75",
+              "name": "messageType",
+              "value": "={{\n  (\n    $json.body.data.messages.message.conversation ||\n    $json.body.data.messages.message.extendedTextMessage?.text\n  ) ? 'text' : 'unknown'\n}}",
+              "type": "string"
+            },
+            {
+              "id": "e135e22b-b063-4e4f-a254-8c29ba8b4190",
+              "name": "phone",
+              "value": "={{ $json.body.data.messages.key.cleanedSenderPn }}",
+              "type": "string"
+            },
+            {
+              "id": "f5465d4c-c52d-47cd-a1d7-932636cee4bf",
+              "name": "fromMe",
+              "value": "={{ $json.body.data.messages.key.fromMe }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1360,
+        48
+      ],
+      "id": "7acf15a0-beb7-4709-b905-6693bd61897d",
+      "name": "normalize whatsapp message"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are an appointment booking information extractor.\n\nUse the current customer message together with the conversation history to collect:\n- service\n- date\n- time\n- customerName\n- confirmed\n\nRules:\n- Preserve valid information provided in earlier messages unless the customer changes it.\n- Never invent missing booking details.\n- If a value is still missing, return it as an empty string.\n- Resolve relative dates such as today, tomorrow, next Tuesday, and next week using today's date.\n- Return dates as YYYY-MM-DD.\n- Return times in 24-hour HH:mm format.\n- Extract the requested date even if it is in the past. Date validation is handled by the workflow.\n- Return ONLY the structured output required by the output parser.\n- Do not include Markdown, explanations, or additional fields.\n- Set confirmed to true only when the customer explicitly replies yes, confirm, or an equivalent confirmation to a booking summary previously shown in the conversation.\n- A new booking request is not a confirmation, even if the customer says \"I want to book\".\n- Otherwise, set confirmed to false.\n\nThe customer's WhatsApp profile name is:\n{{ $json.name }}\n\nToday's date in Asia/Hebron is:\n{{ $now.setZone('Asia/Hebron').toFormat('yyyy-MM-dd') }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -624,
+        48
+      ],
+      "id": "ae0816de-2914-43d4-977e-239c214abeaa",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "fc568b03-f9ae-4094-97d7-372c70cf9d66",
+              "leftValue": "={{ $json.available }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        896,
+        -240
+      ],
+      "id": "b2387b83-02d9-42b3-af96-79fceec11409",
+      "name": "If available"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://wasenderapi.com/api/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_WASENDER_API_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $('normalize whatsapp message').item.json.senderId }}"
+            },
+            {
+              "name": "text",
+              "value": "=={{  '✅ تم تأكيد حجزك بنجاح.\\n\\n' +  'الخدمة: ' + $('AI Agent').item.json.output.service + '\\n' +  'التاريخ: ' + $('AI Agent').item.json.output.date + '\\n' +  'الوقت: ' + $('AI Agent').item.json.output.time + '\\n\\n' +  'شكرًا لك.'}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1344,
+        -336
+      ],
+      "id": "0e5f9f09-04a7-4c6f-b2c5-5e2d5fae8e72",
+      "name": "Confirm appointment"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cfa8a88a-b1b4-4931-8404-e45674b5eb6c",
+              "leftValue": "={{ $json.fromMe }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1136,
+        48
+      ],
+      "id": "06db1fad-c6d7-41f1-a441-4baefb320383",
+      "name": "Message Is From Customer"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6a6378cd-9599-45ff-aae0-d2adf1e9f0a2",
+              "leftValue": "={{ $json.messageType }}",
+              "rightValue": "text",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "38c5e232-eeda-4bef-94bb-4e426d71aacd",
+              "leftValue": "={{ $json.message }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -912,
+        48
+      ],
+      "id": "67b0e504-a973-4fdd-95ce-e14081d12ddf",
+      "name": "Valid Text Message"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "412657df-dfc2-4ebd-8e7a-72a3d554791f",
+              "leftValue": "={{ $json.output.service }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "4575d6d1-4f2f-48f9-a91b-868d853cc8fc",
+              "leftValue": "={{ $json.output.date }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "25b7a007-bc46-45a2-9262-38430d2f70f3",
+              "leftValue": "={{ $json.output.time }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -224,
+        48
+      ],
+      "id": "fa4d2f92-9494-478f-a3b3-3b078ceff28a",
+      "name": "Booking Details Complete"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8f342218-6d92-47d5-9b3d-0700037ce492",
+              "name": "followUpMessage",
+              "value": "={{  'حتى أكمل الحجز، ممكن تبعتلي ' +  [    !$json.output.service ? 'الخدمة المطلوبة' : null,    !$json.output.date ? 'التاريخ' : null,    !$json.output.time ? 'الوقت' : null  ].filter(Boolean).join(' و') +  '؟'}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        0,
+        320
+      ],
+      "id": "2a211f42-87b7-4cf0-ab2c-3ebd62ec554a",
+      "name": "Prepare Missing Details Message"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://wasenderapi.com/api/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_WASENDER_API_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $('normalize whatsapp message').item.json.senderId }}"
+            },
+            {
+              "name": "=text",
+              "value": "={{ $json.followUpMessage }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        256,
+        368
+      ],
+      "id": "487d7b84-8c4f-4629-9175-ff857d809f1c",
+      "name": "Request Missing Booking Details"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b4c1f355-25d4-4987-b082-dafe489631ed",
+              "leftValue": "={{ $json.output.confirmed }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        -256
+      ],
+      "id": "452dd318-2211-45c4-b42f-470ba5b55378",
+      "name": "Customer Confirmed Booking"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8f342218-6d92-47d5-9b3d-0700037ce492",
+              "name": "confirmationMessage",
+              "value": "={{\n  'يرجى تأكيد تفاصيل الحجز:\\n\\n' +\n  'الخدمة: ' + $json.output.service + '\\n' +\n  'التاريخ: ' + $json.output.date + '\\n' +\n  'الوقت: ' + $json.output.time + '\\n\\n' +\n  'هل تؤكد الحجز؟ اكتب نعم أو تأكيد.'\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        448,
+        144
+      ],
+      "id": "6cf8b930-02da-4b9c-88c7-da616318d828",
+      "name": "Prepare Booking Confirmation1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://wasenderapi.com/api/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_WASENDER_API_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $('normalize whatsapp message').item.json.senderId }}"
+            },
+            {
+              "name": "={{ $json.confirmationMessage }}",
+              "value": "تم حجز الموعد و شكرا"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        672,
+        144
+      ],
+      "id": "26a89c30-4781-449f-a2ff-b23b33ed730a",
+      "name": "Send Booking Confirmation"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://wasenderapi.com/api/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_WASENDER_API_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $('normalize whatsapp message').item.json.senderId }}"
+            },
+            {
+              "name": "text",
+              "value": "={{  'عذرًا، الموعد التالي غير متاح:\\n\\n' +  'التاريخ: ' + $('AI Agent').item.json.output.date + '\\n' +  'الوقت: ' + $('AI Agent').item.json.output.time + '\\n\\n' +  'يرجى إرسال وقت آخر مناسب، وسأتحقق منه مباشرة.'}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1120,
+        -144
+      ],
+      "id": "31f5c1ad-9e2b-4413-8e1f-87178090f2b0",
+      "name": "Send Slot Unavailable Message"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "13101e89-0700-441d-85c9-e89df86b169d",
+              "leftValue": "={{ DateTime.fromISO($json.output.date + 'T' + $json.output.time, { zone: 'Asia/Jerusalem' }).weekday }}",
+              "rightValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "a7218bc5-f3cb-4f53-92d7-f4c0fac24358",
+              "leftValue": "={{ DateTime.fromISO($json.output.date + 'T' + $json.output.time, { zone: 'Asia/Jerusalem' }).hour }}",
+              "rightValue": 9,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "3268276f-9648-456c-9772-e4dfc33f9316",
+              "leftValue": "={{ DateTime.fromISO($json.output.date + 'T' + $json.output.time, { zone: 'Asia/Jerusalem' }).hour }}",
+              "rightValue": 17,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        432,
+        -240
+      ],
+      "id": "22c5f40f-5a55-4f92-83ae-3bee0023f031",
+      "name": "Within Business Hours"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://wasenderapi.com/api/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_WASENDER_API_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $('normalize whatsapp message').item.json.senderId }}"
+            },
+            {
+              "name": "text",
+              "value": "={{\n  'عذرًا، الوقت المطلوب خارج ساعات العمل.\\n\\n' +\n  'ساعات العمل:\\n' +\n  'السبت إلى الخميس: 9:00 صباحًا - 5:00 مساءً\\n' +\n  'الجمعة: مغلق\\n\\n' +\n  'يرجى اختيار موعد آخر ضمن ساعات العمل.'\n}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        672,
+        -48
+      ],
+      "id": "9ba3d6ff-ac82-40e0-89dd-5549816b850f",
+      "name": "Send Business Hours Message"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5efc9cfa-fc0a-48ea-a2c7-8afe0d6d37af",
+              "leftValue": "={{ $json.output.date }}",
+              "rightValue": "^\\d{4}-\\d{2}-\\d{2}$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            },
+            {
+              "id": "b1a38f04-7365-46eb-bc5e-df1c801b9249",
+              "leftValue": "={{ $json.output.time }}",
+              "rightValue": "^([01]\\d|2[0-3]):[0-5]\\d$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            },
+            {
+              "id": "fa586b0e-2f94-4fe4-a558-a37258d99295",
+              "leftValue": "={{ DateTime.fromISO($json.output.date + 'T' + $json.output.time, { zone: 'Asia/Jerusalem' }).toMillis() }}",
+              "rightValue": "={{ $now.toMillis() }}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        -48
+      ],
+      "id": "2c6ce303-9367-47c5-ba2a-fa690756c2f4",
+      "name": "Valid Future Date and Time"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://wasenderapi.com/api/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_WASENDER_API_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $('normalize whatsapp message').item.json.senderId }}"
+            },
+            {
+              "name": "text",
+              "value": "=عذرًا، التاريخ أو الوقت غير صحيح، أو أن الموعد أصبح في الماضي.\n\nيرجى إرسال موعد جديد، مثل:\nغدًا الساعة 4 مساءً\nأو\n2026-08-20 الساعة 16:00"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        240,
+        112
+      ],
+      "id": "18e0e24c-b3fd-4aa8-b636-f7a7e9219235",
+      "name": "Send Invalid Date Time Message"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-appointment-booking",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1584,
+        48
+      ],
+      "id": "a6bed124-0b41-4b20-a4b7-06fb6dc4d70a",
+      "name": "Receive WhatsApp Booking Message"
+    }
+  ],
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get availability in a calendar": {
+      "main": [
+        [
+          {
+            "node": "If available",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event": {
+      "main": [
+        [
+          {
+            "node": "Confirm appointment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "normalize whatsapp message": {
+      "main": [
+        [
+          {
+            "node": "Message Is From Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Booking Details Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If available": {
+      "main": [
+        [
+          {
+            "node": "Create an event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Slot Unavailable Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message Is From Customer": {
+      "main": [
+        [
+          {
+            "node": "Valid Text Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Text Message": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Booking Details Complete": {
+      "main": [
+        [
+          {
+            "node": "Valid Future Date and Time",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Missing Details Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Missing Details Message": {
+      "main": [
+        [
+          {
+            "node": "Request Missing Booking Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Customer Confirmed Booking": {
+      "main": [
+        [
+          {
+            "node": "Within Business Hours",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Booking Confirmation1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Booking Confirmation1": {
+      "main": [
+        [
+          {
+            "node": "Send Booking Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Within Business Hours": {
+      "main": [
+        [
+          {
+            "node": "Get availability in a calendar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Business Hours Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Future Date and Time": {
+      "main": [
+        [
+          {
+            "node": "Customer Confirmed Booking",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Invalid Date Time Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Receive WhatsApp Booking Message": {
+      "main": [
+        [
+          {
+            "node": "normalize whatsapp message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "tags": []
+}
