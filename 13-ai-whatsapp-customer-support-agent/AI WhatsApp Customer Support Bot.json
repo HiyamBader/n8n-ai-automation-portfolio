@@ -1,6 +1,563 @@
 {
-  "name": "AI WhatsApp Customer Support Bot",
+  "name": "AI WhatsApp Customer Support Bot - Text and Voice Input",
   "nodes": [
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messageType }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "2d2723d9-82c6-4f9d-989b-01b6ce5ee60f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "5f952cd8-0ef9-48d4-8741-65db8c1b90e3",
+                    "leftValue": "={{ $json.messageType }}",
+                    "rightValue": "audio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        752,
+        1040
+      ],
+      "id": "ee23eae1-d7bd-4ee6-a0ee-c78b397c2649",
+      "name": "Message Type Router"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.wasenderapi.com/api/decrypt-media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_WASENDER_API_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"data\": {\n    \"messages\": {\n      \"key\": {\n        \"id\": \"{{ $json.messageId }}\"\n      },\n      \"message\": {\n        \"audioMessage\": {\n          \"url\": \"{{ $json.input }}\",\n          \"mimetype\": \"{{ $json.mimeType }}\",\n          \"mediaKey\": \"{{ $json.mediaKey }}\"\n        }\n      }\n    }\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1264,
+        1056
+      ],
+      "id": "b1f4dea5-0ac5-47f7-af0a-53b358af1799",
+      "name": "Decrypt Audio File",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "Message Detection\n\nText\nAudio\n(Image - Coming Soon)\n(Document - Coming Soon)",
+        "height": 192,
+        "width": 624,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        32,
+        368
+      ],
+      "typeVersion": 1,
+      "id": "24864d3e-d1c5-4cf5-84eb-0bbc399a6a19",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "Workflow Overview\n\nFeatures:\n✅ Text Messages\n✅ Voice Message Transcription\n✅ AI Customer Support\n✅ Arabic & English Replies\n✅ Graceful Error Handling\n\nBuilt with:\nn8n • Gemini • WaSender",
+        "height": 272,
+        "width": 528,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "e1878b8b-2ac6-406c-80b8-dd6528c3f9d7",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "Text Processing\n\nCustomer Message\n↓\nAI Agent\n↓\nSend Text Reply",
+        "height": 208,
+        "width": 960,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        800,
+        48
+      ],
+      "typeVersion": 1,
+      "id": "4cda0a7b-34aa-43e5-8f80-0432b561f419",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "Voice Processing\n\nDecrypt Audio\n↓\nDownload Audio\n↓\nSpeech-to-Text\n↓\nAI Agent\n↓\nSend Text Reply",
+        "height": 496,
+        "width": 288
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        880,
+        720
+      ],
+      "typeVersion": 1,
+      "id": "6ebbcef2-3208-42ca-985c-cf806f8a98fe",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "Voice Input\n\nCustomer voice messages are transcribed and answered as text.",
+        "width": 336,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2336,
+        544
+      ],
+      "typeVersion": 1,
+      "id": "8c2aa489-f902-426d-95e4-1cf303cf64dd",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "Response Delivery\nResponse sent successfully ✅",
+        "height": 112,
+        "width": 272,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2784,
+        592
+      ],
+      "typeVersion": 1,
+      "id": "e463dc8c-f8cc-458f-892f-5a3d453f3cc0",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://wasenderapi.com/api/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_WASENDER_API_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $('Normalize Incoming Message').item.json.senderId }}"
+            },
+            {
+              "name": "text",
+              "value": "=عذرًا، يمكنني حاليًا التعامل مع الرسائل النصية والصوتية فقط. يرجى إرسال استفسارك كنص أو تسجيل صوتي."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        976,
+        1248
+      ],
+      "id": "b1ea3704-63d6-4ea7-91b5-202de838af67",
+      "name": "Send Unsupported Message"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://wasenderapi.com/api/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_WASENDER_API_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $('Normalize Incoming Message').item.json.senderId }}"
+            },
+            {
+              "name": "text",
+              "value": "=عذرًا، تعذر معالجة التسجيل الصوتي حاليًا. يرجى إعادة المحاولة أو إرسال رسالتك كنص."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        3248,
+        1104
+      ],
+      "id": "acfd60a8-e96f-4c8b-99f0-698a1df3a541",
+      "name": "Send Voice Processing Error"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.publicUrl }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1552,
+        1136
+      ],
+      "id": "b92eb3c3-520b-49d9-9a38-5c0ebe5aea0f",
+      "name": "Download Decrypted Audio",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://wasenderapi.com/api/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_WASENDER_API_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $('Normalize Incoming Message').item.json.senderId }}"
+            },
+            {
+              "name": "text",
+              "value": "=عذرًا، تعذر معالجة رسالتك حاليًا. يرجى المحاولة مرة أخرى بعد قليل."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1552,
+        480
+      ],
+      "id": "4f421daa-301d-4001-af38-45a3514d0cdb",
+      "name": "Send Text Processing Error"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://wasenderapi.com/api/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_WASENDER_API_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{ $('Normalize Incoming Message').item.json.senderId }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1552,
+        288
+      ],
+      "id": "8a4f614c-1661-4da5-8f6b-ab9d0387828e",
+      "name": "Send Text Reply"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "81ae63b6-c4dd-44e3-8730-d867d029d7f0",
+              "leftValue": "={{ $json.fromMe }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        528,
+        1056
+      ],
+      "id": "543d2ed9-2816-47fa-bdc6-f768b434796a",
+      "name": "Incoming Message Only"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e3c9c2eb-202b-4d7e-bb82-982559428d11",
+              "leftValue": "={{ $json.input }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        976,
+        384
+      ],
+      "id": "3a93f55e-54a1-4f39-bcbe-4a99e1eed9d2",
+      "name": "Valid Text Message"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "79584e9d-4c11-460f-a01a-bd0491c92d3a",
+              "leftValue": "={{ $json.input }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "0f5cc5b2-6f47-46fb-a232-d3a0453208b5",
+              "leftValue": "={{ $json.mediaKey }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "7fe2dbb6-489e-447d-a5f9-e649f4a0e3ef",
+              "leftValue": "={{ $json.messageId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        976,
+        1056
+      ],
+      "id": "cf5599cd-b3e8-45f1-b34a-30db6bc5cf05",
+      "name": "Valid Voice Message"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Customer Name: {{ $json.name }}\n\nCustomer Message:\n{{ $('Normalize Incoming Message').item.json.input }}",
+        "options": {
+          "systemMessage": "You are a professional WhatsApp customer support assistant.\n\nYour responsibilities:\n- Reply in the same language as the customer.\n- Be polite, friendly, and professional.\n- Keep your answers clear and concise.\n- If you don't know the answer, say you don't have enough information and recommend contacting a human agent.\n- Never make up facts.\n- Do not mention that you are an AI unless asked.\nBusiness information:\n- Working days: Saturday through Thursday\n- Working hours: 9:00 AM to 5:00 PM\n- Friday: Closed\n\nWhen the customer asks about working hours, answer directly using this information.\nAlways reply in the same language used by the customer.\n\nAlways detect the language of the customer's current message and reply in that same language, even if previous messages used a different language. If the current message is in English, reply entirely in English. If it is in Arabic, reply in Arabic."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1200,
+        384
+      ],
+      "id": "43a640e8-7042-409f-8837-302ec674da9b",
+      "name": "Text Support Agent",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Customer Name: {{ $('Normalize Incoming Message').item.json.name }}\n\nCustomer Message:\n{{ $json.content.parts[0].text }}\n\n",
+        "options": {
+          "systemMessage": "You are a professional WhatsApp customer support assistant.\n\nYour responsibilities:\n- Reply in the same language as the customer.\n- Be polite, friendly, and professional.\n- Keep your answers clear and concise.\n- If you don't know the answer, say you don't have enough information and recommend contacting a human agent.\n- Never make up facts.\n- Do not mention that you are an AI unless asked.\n\nBusiness information:\n- Working days: Saturday through Thursday\n- Working hours: 9:00 AM to 5:00 PM\n- Friday: Closed\n\nWhen the customer asks about working hours, answer directly using this information.\nAlways reply in the same language used by the customer.\n\n\nAlways detect the language of the customer's current message and reply in that same language, even if previous messages used a different language. If the current message is in English, reply entirely in English. If it is in Arabic, reply in Arabic."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2000,
+        1328
+      ],
+      "id": "66ea2858-02bc-4db9-b4b8-1ad6a4a9ac46",
+      "name": "Voice Support Agent",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1280,
+        624
+      ],
+      "id": "22dc71d9-3424-4282-a356-912efff377b7",
+      "name": "Gemini - Text"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        2080,
+        1552
+      ],
+      "id": "59ea03d3-518c-4b98-a847-eeaf183ccc98",
+      "name": "Gemini - Voice"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1776,
+        1200
+      ],
+      "id": "5a9e480c-54e2-4b4f-8512-2ba6a944d2f3",
+      "name": "Transcribe Voice Message",
+      "onError": "continueErrorOutput"
+    },
     {
       "parameters": {
         "httpMethod": "POST",
@@ -10,11 +567,11 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        0,
-        -448
+        80,
+        1056
       ],
-      "id": "bd40564d-66be-4f9a-b07e-cf03e9b55604",
-      "name": "Webhook",
+      "id": "adc433de-a473-46d9-b1a5-11e783860d68",
+      "name": "Receive WhatsApp Message",
       "webhookId": "9f193629-4864-402f-886e-2989213840d0"
     },
     {
@@ -82,570 +639,34 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        224,
-        -448
+        304,
+        1056
       ],
-      "id": "be0c3b3b-ec8d-4f2a-8711-c759e31be9cb",
-      "name": "Edit Fields"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 3
-          },
-          "conditions": [
-            {
-              "id": "81ae63b6-c4dd-44e3-8730-d867d029d7f0",
-              "leftValue": "={{ $json.fromMe }}",
-              "rightValue": false,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        448,
-        -448
-      ],
-      "id": "0ac018ec-3486-4bd4-be32-2e4a82ed0cad",
-      "name": "If"
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "=Customer Name: {{ $json.name }}\n\nCustomer Message:\n{{ $('Edit Fields').item.json.input }}",
-        "options": {
-          "systemMessage": "You are a professional WhatsApp customer support assistant.\n\nYour responsibilities:\n- Reply in the same language as the customer.\n- Be polite, friendly, and professional.\n- Keep your answers clear and concise.\n- If you don't know the answer, say you don't have enough information and recommend contacting a human agent.\n- Never make up facts.\n- Do not mention that you are an AI unless asked."
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 3.1,
-      "position": [
-        1024,
-        -704
-      ],
-      "id": "1a5d9384-1cb1-41aa-aef7-318fb4bf4907",
-      "name": "AI Agent"
-    },
-    {
-      "parameters": {
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-      "typeVersion": 1.1,
-      "position": [
-        1024,
-        -560
-      ],
-      "id": "568173e0-d60b-48c2-a605-31485bea8b92",
-      "name": "Google Gemini Chat Model",
-      "credentials": {
-        "googlePalmApi": {
-          "id": null,
-          "name": "",
-          "__aiGatewayManaged": true
-        }
-      }
-    },
-    {
-      "parameters": {
-        "rules": {
-          "values": [
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 3
-                },
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.messageType }}",
-                    "rightValue": "text",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    },
-                    "id": "2d2723d9-82c6-4f9d-989b-01b6ce5ee60f"
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "text"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 3
-                },
-                "conditions": [
-                  {
-                    "id": "5f952cd8-0ef9-48d4-8741-65db8c1b90e3",
-                    "leftValue": "={{ $json.messageType }}",
-                    "rightValue": "audio",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              }
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.4,
-      "position": [
-        624,
-        -448
-      ],
-      "id": "7e278d64-47b8-4d4e-8f2f-55fc69acf3cd",
-      "name": "Message Type Router"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://wasenderapi.com/api/send-message",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer 03327bc4a2840e02079f30b2859bac4a944bda680d5fab68e74f45de3dd4d48f"
-            }
-          ]
-        },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "to",
-              "value": "={{ $('Edit Fields').item.json.senderId }}"
-            },
-            {
-              "name": "text",
-              "value": "={{ $json.output }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        1376,
-        -704
-      ],
-      "id": "cc7ae085-0b40-495b-bb92-84bd67825706",
-      "name": "HTTP Request"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://www.wasenderapi.com/api/decrypt-media",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer 03327bc4a2840e02079f30b2859bac4a944bda680d5fab68e74f45de3dd4d48f"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"data\": {\n    \"messages\": {\n      \"key\": {\n        \"id\": \"{{ $json.messageId }}\"\n      },\n      \"message\": {\n        \"audioMessage\": {\n          \"url\": \"{{ $json.input }}\",\n          \"mimetype\": \"{{ $json.mimeType }}\",\n          \"mediaKey\": \"{{ $json.mediaKey }}\"\n        }\n      }\n    }\n  }\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        960,
-        -304
-      ],
-      "id": "936e7be7-3371-4793-92de-88ba45273580",
-      "name": "Decrypt Audio File"
-    },
-    {
-      "parameters": {
-        "url": "={{ $json.publicUrl }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        1248,
-        -304
-      ],
-      "id": "e10ba017-475e-4b2d-882b-34aaa9d44a3d",
-      "name": "HTTP Request1"
-    },
-    {
-      "parameters": {
-        "resource": "audio",
-        "modelId": {
-          "__rl": true,
-          "value": "models/gemini-2.5-flash",
-          "mode": "list",
-          "cachedResultName": "models/gemini-2.5-flash"
-        },
-        "inputType": "binary",
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.googleGemini",
-      "typeVersion": 1.2,
-      "position": [
-        1472,
-        -304
-      ],
-      "id": "324746a0-87d7-42a8-8c00-7bd4efcc90e9",
-      "name": "Transcribe a recording",
-      "credentials": {
-        "googlePalmApi": {
-          "id": "ckg3f7JrQSlFBzAb",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "=Customer Name: {{ $('Edit Fields').item.json.name }}\n\nCustomer Message:\n{{ $json.content.parts[0].text }}",
-        "options": {
-          "systemMessage": "You are a professional WhatsApp customer support assistant.\n\nYour responsibilities:\n- Reply in the same language as the customer.\n- Be polite, friendly, and professional.\n- Keep your answers clear and concise.\n- If you don't know the answer, say you don't have enough information and recommend contacting a human agent.\n- Never make up facts.\n- Do not mention that you are an AI unless asked."
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 3.1,
-      "position": [
-        1696,
-        -304
-      ],
-      "id": "1a70399d-a618-4de3-9bef-69aa1c7af564",
-      "name": "AI Agent1"
-    },
-    {
-      "parameters": {
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-      "typeVersion": 1.1,
-      "position": [
-        1776,
-        -80
-      ],
-      "id": "0614baf6-474c-4e1a-b268-80ab40e79ea5",
-      "name": "Google Gemini Chat Model1",
-      "credentials": {
-        "googlePalmApi": {
-          "id": "ckg3f7JrQSlFBzAb",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "resource": "audio",
-        "input": "={{ $json.output }}",
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.openAi",
-      "typeVersion": 2.3,
-      "position": [
-        2048,
-        -304
-      ],
-      "id": "6dbd4522-af27-4cfd-889d-fc15d2a8602e",
-      "name": "Generate audio",
-      "credentials": {
-        "openAiApi": {
-          "id": null,
-          "name": "",
-          "__aiGatewayManaged": true
-        }
-      }
-    },
-    {
-      "parameters": {
-        "driveId": {
-          "__rl": true,
-          "mode": "list",
-          "value": "My Drive"
-        },
-        "folderId": {
-          "__rl": true,
-          "mode": "list",
-          "value": "root",
-          "cachedResultName": "/ (Root folder)"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleDrive",
-      "typeVersion": 3,
-      "position": [
-        2272,
-        -304
-      ],
-      "id": "cea09a9c-a9fc-444e-92bf-ad8b6a115810",
-      "name": "Upload file",
-      "credentials": {
-        "googleDriveOAuth2Api": {
-          "id": "dWwKIdLX5ReNZd0b",
-          "name": "Google Drive account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "share",
-        "fileId": {
-          "__rl": true,
-          "value": "={{ $json.id }}",
-          "mode": "id"
-        },
-        "permissionsUi": {
-          "permissionsValues": {
-            "role": "reader",
-            "type": "anyone"
-          }
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleDrive",
-      "typeVersion": 3,
-      "position": [
-        2496,
-        -304
-      ],
-      "id": "187b7c31-12d9-49c6-9f17-d10a43fbebd2",
-      "name": "Share file",
-      "credentials": {
-        "googleDriveOAuth2Api": {
-          "id": "dWwKIdLX5ReNZd0b",
-          "name": "Google Drive account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://www.wasenderapi.com/api/send-message",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "Bearer 03327bc4a2840e02079f30b2859bac4a944bda680d5fab68e74f45de3dd4d48f"
-            }
-          ]
-        },
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "to",
-              "value": "={{ $('Edit Fields').item.json.senderId }}"
-            },
-            {
-              "name": "audioUrl",
-              "value": "={{ $('Upload file').item.json.webContentLink }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        2720,
-        -304
-      ],
-      "id": "13aecfd9-e0f7-4270-a8d5-49b41a739b49",
-      "name": "HTTP Request2"
-    },
-    {
-      "parameters": {
-        "content": "Message Detection\n\nText\nAudio\n(Image - Coming Soon)\n(Document - Coming Soon)",
-        "height": 192,
-        "width": 624,
-        "color": 5
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        -48,
-        -656
-      ],
-      "typeVersion": 1,
-      "id": "cf283d84-9fe0-4e46-ace8-7220c84d7e45",
-      "name": "Sticky Note"
-    },
-    {
-      "parameters": {
-        "content": "Workflow overview\n\nFeatures:\n✅ Text Messages\n✅ Voice Messages\n✅ AI Responses\n✅ Voice Replies\n\nBuilt with:\nn8n • Gemini • Wasender • Google Drive",
-        "height": 272,
-        "width": 528,
-        "color": 2
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        -80,
-        -1024
-      ],
-      "typeVersion": 1,
-      "id": "ccece222-9137-45cf-b4c0-1b9b95ae4249",
-      "name": "Sticky Note1"
-    },
-    {
-      "parameters": {
-        "content": "Text Processing\n\nCustomer Message\n↓\nAI Agent\n↓\nSend Text Reply",
-        "height": 208,
-        "width": 960,
-        "color": 3
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        720,
-        -976
-      ],
-      "typeVersion": 1,
-      "id": "a5dc4aa7-79ec-474d-bfde-9997ae12e8fd",
-      "name": "Sticky Note2"
-    },
-    {
-      "parameters": {
-        "content": "Voice Processing\n\nDecrypt Audio\n↓\nDownload Audio\n↓\nSpeech-to-Text\n↓\nAI Agent\n↓\nText-to-Speech\n↓\nUpload\n↓\nShare\n↓\nSend Voice Reply",
-        "height": 496,
-        "width": 288
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        608,
-        -208
-      ],
-      "typeVersion": 1,
-      "id": "733c6b6e-95c2-4a83-8fc5-5335ac9ed1d4",
-      "name": "Sticky Note3"
-    },
-    {
-      "parameters": {
-        "content": "Media Upload & Sharing\n\nGenerate public link\nShare file",
-        "width": 336,
-        "color": 6
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        2256,
-        -480
-      ],
-      "typeVersion": 1,
-      "id": "26790d72-f12c-4fe2-9c57-467586b5a7c2",
-      "name": "Sticky Note4"
-    },
-    {
-      "parameters": {
-        "content": "Response Delivery\nResponse sent successfully ✅",
-        "height": 112,
-        "width": 272,
-        "color": 5
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "position": [
-        2704,
-        -432
-      ],
-      "typeVersion": 1,
-      "id": "f459bf69-10f5-4c6e-b26c-5c8a7ebd9029",
-      "name": "Sticky Note5"
+      "id": "e36d691f-0dc6-4bb8-a4ec-0328bf5c167a",
+      "name": "Normalize Incoming Message"
     }
   ],
   "pinData": {},
   "connections": {
-    "Webhook": {
-      "main": [
-        [
-          {
-            "node": "Edit Fields",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Edit Fields": {
-      "main": [
-        [
-          {
-            "node": "If",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "If": {
-      "main": [
-        [
-          {
-            "node": "Message Type Router",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Google Gemini Chat Model": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "AI Agent",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Message Type Router": {
       "main": [
         [
           {
-            "node": "AI Agent",
+            "node": "Valid Text Message",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Decrypt Audio File",
+            "node": "Valid Voice Message",
             "type": "main",
             "index": 0
           }
-        ]
-      ]
-    },
-    "AI Agent": {
-      "main": [
+        ],
         [
           {
-            "node": "HTTP Request",
+            "node": "Send Unsupported Message",
             "type": "main",
             "index": 0
           }
@@ -656,84 +677,177 @@
       "main": [
         [
           {
-            "node": "HTTP Request1",
+            "node": "Download Decrypted Audio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Voice Processing Error",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "HTTP Request1": {
+    "Download Decrypted Audio": {
       "main": [
         [
           {
-            "node": "Transcribe a recording",
+            "node": "Transcribe Voice Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Voice Processing Error",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Transcribe a recording": {
+    "Incoming Message Only": {
       "main": [
         [
           {
-            "node": "AI Agent1",
+            "node": "Message Type Router",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Voice Processing Error",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Google Gemini Chat Model1": {
+    "Valid Text Message": {
+      "main": [
+        [
+          {
+            "node": "Text Support Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Text Processing Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Voice Message": {
+      "main": [
+        [
+          {
+            "node": "Decrypt Audio File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Support Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Text Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Text Processing Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice Support Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Text Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Voice Processing Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini - Text": {
       "ai_languageModel": [
         [
           {
-            "node": "AI Agent1",
+            "node": "Text Support Agent",
             "type": "ai_languageModel",
             "index": 0
           }
         ]
       ]
     },
-    "AI Agent1": {
+    "Gemini - Voice": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Voice Support Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe Voice Message": {
       "main": [
         [
           {
-            "node": "Generate audio",
+            "node": "Voice Support Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Voice Processing Error",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Generate audio": {
+    "Receive WhatsApp Message": {
       "main": [
         [
           {
-            "node": "Upload file",
+            "node": "Normalize Incoming Message",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Upload file": {
+    "Normalize Incoming Message": {
       "main": [
         [
           {
-            "node": "Share file",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Share file": {
-      "main": [
-        [
-          {
-            "node": "HTTP Request2",
+            "node": "Incoming Message Only",
             "type": "main",
             "index": 0
           }
@@ -747,12 +861,12 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "0e6b43f7-2d89-4f9d-b743-a3a877ecf042",
+  "versionId": "cceea48f-7d7e-4ba3-80ac-a8464e87c672",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "5abbed3cfe8430dde0054ceb163c33f060cdd104d4143bbfbd7095957a92e201"
+    "instanceId": "288eadb0abd5883d85b1c09d9eae069277b5465dee1b79545f7521dac36b2609"
   },
   "nodeGroups": [],
-  "id": "PW3Bw7rN7BHJgAga",
+  "id": "lgTiANjWT6MOvfOI",
   "tags": []
 }

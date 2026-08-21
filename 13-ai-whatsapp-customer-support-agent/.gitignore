@@ -15,3 +15,5 @@ node_modules/
 
 # n8n local data
 .n8n/
+
+assets/legacy demo/
