@@ -1,0 +1,643 @@
+{
+  "name": "09 - AI Gmail Lead Qualification & CRM",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "labelIds": [
+            "YOUR_AI_LEADS_LABEL_ID"
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        64
+      ],
+      "id": "4b835806-ed87-4537-91ef-543ef6d42b4f",
+      "name": "Gmail Trigger"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "142fe611-103a-4d00-9b5e-84478cf60733",
+              "name": "emailId",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "98de5fb5-94ec-4043-b5cb-889aed7080b6",
+              "name": "subject",
+              "value": "={{ $json.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "82896bd3-9c24-45f5-8e7f-547181fbcf2f",
+              "name": "sender",
+              "value": "={{ $json.from.value[0].name }} {{ $json.from.value[0].address }}",
+              "type": "string"
+            },
+            {
+              "id": "5d3ad63b-e665-4028-98ae-1b1a29b3df61",
+              "name": "message",
+              "value": "={{ $json.textPlain || $json.text || $json.snippet || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "7411fdbc-8b48-41a2-aa98-a3acd864962c",
+              "name": "receivedAt",
+              "value": "={{ $json.date || $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "3f24d4d8-629f-4f8f-a247-053c6b121049",
+              "name": "source",
+              "value": "Gmail",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        64
+      ],
+      "id": "ede6ed6c-ff94-4215-aa08-740736becc9c",
+      "name": "Normalize Email"
+    },
+    {
+      "parameters": {
+        "text": "={{\n  'Sender: ' + $json.sender +\n  '\\nSubject: ' + $json.subject +\n  '\\nMessage:\\n' + $json.message\n}}",
+        "schemaType": "fromJson",
+        "jsonSchemaExample": "{\n  \"isLead\": true,\n  \"name\": \"Sarah Ahmed\",\n  \"email\": \"sarah@brightdental.example\",\n  \"phone\": \"+970599123456\",\n  \"company\": \"Bright Dental Clinic\",\n  \"service\": \"AI automation for lead qualification and appointment booking\",\n  \"budget\": 1500,\n  \"timelineDays\": 14,\n  \"summary\": \"Dental clinic needs a WhatsApp automation system to qualify leads and book appointments.\",\n  \"missingFields\": []\n}",
+        "options": {
+          "systemPromptTemplate": "Analyze the email and always return every field defined in the schema.\n\nIf the email is not a genuine sales or service inquiry:\n- Set isLead to false.\n- Set all unavailable text fields to an empty string.\n- Set budget and timelineDays to 0.\n- Add all unavailable lead fields to missingFields.\n- Provide a short summary explaining why the email is not a lead.\n\nIf the email is a lead:\n- Set isLead to true.\n- Extract only information explicitly stated in the email.\n- Do not invent values.\n- Use 0 for an unavailable budget or timelineDays.\n- Use an empty string for unavailable text fields.\n- List unavailable fields in missingFields.\n\nReturn only data matching the required schema."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        64
+      ],
+      "id": "19d15dd9-ef58-443d-8ed2-89da9a31e1f9",
+      "name": "Extract Lead Information",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        280
+      ],
+      "id": "567760e4-4df4-4f2f-af9f-f48e604e5fee",
+      "name": "Google Gemini Chat Model"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sourceEmail = $('Normalize Email').first().json;\n\nreturn $input.all().map(item => {\n  const lead = item.json.output ?? item.json;\n\n  const budget = Number(lead.budget) || 0;\n  const timelineDays = Number(lead.timelineDays) || 0;\n  const missingFields = Array.isArray(lead.missingFields)\n    ? lead.missingFields\n    : [];\n\n  let score = 0;\n  const scoreReasons = [];\n\n  if (!lead.isLead) {\n    return {\n      json: {\n        ...sourceEmail,\n        ...lead,\n        leadScore: 0,\n        leadStatus: 'Not a Lead',\n        scoreReasons: ['The email is not a sales inquiry']\n      }\n    };\n  }\n\n  if (budget >= 1000) {\n    score += 40;\n    scoreReasons.push('High budget');\n  } else if (budget >= 500) {\n    score += 30;\n    scoreReasons.push('Good budget');\n  } else if (budget >= 200) {\n    score += 20;\n    scoreReasons.push('Moderate budget');\n  } else if (budget > 0) {\n    score += 10;\n    scoreReasons.push('Budget provided');\n  }\n\n  if (timelineDays > 0 && timelineDays <= 14) {\n    score += 30;\n    scoreReasons.push('Ready to start soon');\n  } else if (timelineDays <= 30 && timelineDays > 0) {\n    score += 20;\n    scoreReasons.push('Short timeline');\n  } else if (timelineDays <= 90 && timelineDays > 0) {\n    score += 10;\n    scoreReasons.push('Timeline provided');\n  }\n\n  if (missingFields.length === 0) {\n    score += 20;\n    scoreReasons.push('Complete lead information');\n  } else if (missingFields.length <= 2) {\n    score += 10;\n    scoreReasons.push('Most information is available');\n  }\n\n  if (lead.company) {\n    score += 5;\n    scoreReasons.push('Company provided');\n  }\n\n  if (lead.email && lead.phone) {\n    score += 5;\n    scoreReasons.push('Complete contact details');\n  }\n\n  score = Math.min(score, 100);\n\n  const leadStatus =\n    score >= 70 ? 'Hot' :\n    score >= 40 ? 'Warm' :\n    'Cold';\n\n  return {\n    json: {\n      ...sourceEmail,\n      ...lead,\n      leadScore: score,\n      leadStatus,\n      scoreReasons\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        -112
+      ],
+      "id": "dbbabe6a-7582-4ac9-9eef-9221fcdbcb74",
+      "name": "Calculate Lead Score"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.leadStatus }}",
+                    "rightValue": "Hot",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a0ebcf8b-962a-4cb5-b701-da220b5f6fe9"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Hot"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "47590b03-d899-4ceb-b601-75927d583a95",
+                    "leftValue": "={{ $json.leadStatus }}",
+                    "rightValue": "Warm",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Warm"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "6ddae610-b628-4d37-9eed-0e3a42c6d4d9",
+                    "leftValue": "={{ $json.leadStatus }}",
+                    "rightValue": "Cold",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Cold"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Not a lead"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1024,
+        -144
+      ],
+      "id": "add5f878-19c0-426c-9113-598ff1671ce9",
+      "name": "Route Lead Status"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email ID": "={{ $json.emailId }}",
+            "Received At": "={{ $json.receivedAt }}",
+            "Name": "={{ $json.name }}",
+            "Email": "={{ $json.email }}",
+            "Phone": "={{ $json.phone }}",
+            "Company": "={{ $json.company }}",
+            "Service": "={{ $json.service }}",
+            "Budget": "={{ $json.budget }}",
+            "Timeline Days": "={{ $json.timelineDays }}",
+            "Lead Score": "={{ $json.leadScore }}",
+            "Lead Status": "={{ $json.leadStatus }}",
+            "Summary": "={{ $json.summary }}",
+            "Missing Fields": "={{ ($json.missingFields || []).join(', ') }}",
+            "Score Reasons": "={{ ($json.scoreReasons || []).join(', ') }}",
+            "Source": "={{ $json.source }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Email ID",
+              "displayName": "Email ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Received At",
+              "displayName": "Received At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service",
+              "displayName": "Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Budget",
+              "displayName": "Budget",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timeline Days",
+              "displayName": "Timeline Days",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lead Score",
+              "displayName": "Lead Score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lead Status",
+              "displayName": "Lead Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Missing Fields",
+              "displayName": "Missing Fields",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Score Reasons",
+              "displayName": "Score Reasons",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1248,
+        -208
+      ],
+      "id": "039d8076-92a7-4c6f-a2b8-ae82e049c04f",
+      "name": "Save Lead to CRM",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "YOUR_SALES_EMAIL@example.com",
+        "subject": "={{ '🔥 Hot Lead: ' + $json.name + ' — Score ' + $json.leadScore }}",
+        "message": "={{\n  '<div style=\"font-family:Arial,sans-serif;max-width:650px;color:#222\">' +\n    '<h2 style=\"color:#d93025\">🔥 New Hot Lead</h2>' +\n    '<p>A new high-priority lead requires immediate follow-up.</p>' +\n\n    '<table style=\"width:100%;border-collapse:collapse\">' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Name</strong></td><td style=\"padding:8px;border:1px solid #ddd\">' + $json.name + '</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Company</strong></td><td style=\"padding:8px;border:1px solid #ddd\">' + $json.company + '</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Email</strong></td><td style=\"padding:8px;border:1px solid #ddd\">' + $json.email + '</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Phone</strong></td><td style=\"padding:8px;border:1px solid #ddd\">' + $json.phone + '</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Budget</strong></td><td style=\"padding:8px;border:1px solid #ddd\">$' + $json.budget + '</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Timeline</strong></td><td style=\"padding:8px;border:1px solid #ddd\">' + $json.timelineDays + ' days</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Lead Score</strong></td><td style=\"padding:8px;border:1px solid #ddd\"><strong>' + $json.leadScore + '/100</strong></td></tr>' +\n    '</table>' +\n\n    '<h3>Requested Service</h3>' +\n    '<p>' + $json.service + '</p>' +\n\n    '<h3>Summary</h3>' +\n    '<p>' + $json.summary + '</p>' +\n\n    '<h3>Qualification Reasons</h3>' +\n    '<ul><li>' + ($json.scoreReasons || []).join('</li><li>') + '</li></ul>' +\n  '</div>'\n}}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        112
+      ],
+      "id": "06de7e48-c7fa-406e-85d6-d09cc00ee924",
+      "name": "Notify Sales Team",
+      "webhookId": "34b57e27-36fe-4a92-aa3e-4f3f65ee00eb",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $('Normalize Email').item.json.emailId }}",
+        "labelIds": [
+          "YOUR_AI_PROCESSED_LABEL_ID"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1472,
+        192
+      ],
+      "id": "ae9dbb38-d081-4eb8-b5da-7e33c53c5445",
+      "name": "Mark as Processed",
+      "webhookId": "6db00e6f-336b-4d76-a779-6d3de628bd99"
+    },
+    {
+      "parameters": {
+        "operation": "removeLabels",
+        "messageId": "={{ $json.id }}",
+        "labelIds": [
+          "YOUR_AI_LEADS_LABEL_ID"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1696,
+        192
+      ],
+      "id": "a2f626e5-788f-442c-b86b-6a0912b49ce8",
+      "name": "Remove AI-Leads Label",
+      "webhookId": "4ccfa3fc-814e-4afe-9ba6-324fe503d9f5"
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $('Normalize Email').item.json.emailId }}",
+        "labelIds": [
+          "YOUR_AI_ERRORS_LABEL_ID"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1664,
+        -48
+      ],
+      "id": "5d72a709-4178-4fe5-a94a-7c6efc293c87",
+      "name": "Mark Analysis Error",
+      "webhookId": "6db00e6f-336b-4d76-a779-6d3de628bd99"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Email": {
+      "main": [
+        [
+          {
+            "node": "Extract Lead Information",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract Lead Information",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Lead Information": {
+      "main": [
+        [
+          {
+            "node": "Calculate Lead Score",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Analysis Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Lead Score": {
+      "main": [
+        [
+          {
+            "node": "Route Lead Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Lead Status": {
+      "main": [
+        [
+          {
+            "node": "Save Lead to CRM",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify Sales Team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save Lead to CRM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save Lead to CRM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark as Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Lead to CRM": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Mark Analysis Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Sales Team": {
+      "main": [
+        [
+          {
+            "node": "Mark as Processed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Analysis Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as Processed": {
+      "main": [
+        [
+          {
+            "node": "Remove AI-Leads Label",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove AI-Leads Label": null
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ba650052-a2ee-4658-8594-1323d5671de3",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "id": "nCC0e1ehxWvqyI7y",
+  "tags": []
+}
