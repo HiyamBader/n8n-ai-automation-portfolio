@@ -12,7 +12,7 @@ A collection of practical n8n workflows demonstrating AI automation, conversatio
 - [06 - Gmail AI Email Assistant](06-gmail-ai-email-assistant)
 - [07 - AI Social Media Post Generator](07-ai-social-media-post-generator)
 - [08 - AI Customer Support Email Assistant](08-ai-customer-support-email-assistant)
-- [09 - AI CRM Lead Qualification](09-ai-crm-lead-qualification)
+- [09 - AI Gmail Lead Qualification & CRM](09-ai-gmail-lead-qualification-crm)
 - [10 - AI Knowledge Base Assistant (RAG)](10-ai-knowledge-base-rag)
 - [11 - AI Content Marketing Agent](11-ai-content-marketing-agent)
 - [12 - AI Customer Support Email Assistant](12-ai-customer-support-email-assistant)
