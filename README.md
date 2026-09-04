@@ -18,6 +18,7 @@ A collection of practical n8n workflows demonstrating AI automation, conversatio
 - [12 - AI Customer Support Email Assistant](12-ai-customer-support-email-assistant)
 - [13 - AI WhatsApp Customer Support Agent](13-ai-whatsapp-customer-support-agent)
 - [14 - AI WhatsApp Appointment Booking Agent](14-ai-appointment-booking-agent)
+- [15 -WhatsApp AI Appointment Booking Agent – Meta Cloud API](whatsapp-ai-appointment-booking-meta-cloud-api)
 
 ## Featured Project
 

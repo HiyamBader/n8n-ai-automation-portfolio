@@ -1,0 +1,1772 @@
+{
+  "name": "WhatsApp AI Appointment Booking Agent - Portfolio Template",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -656
+      ],
+      "id": "2bee24cd-8b9e-440f-a08a-d4c5880c748e",
+      "name": "WhatsApp Trigger"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "81c58f9f-6b6a-4332-aee3-bc54fb743f71",
+              "name": "messageText",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "b35453c4-23a4-4186-9008-849e5a9d1fba",
+              "name": "senderPhone",
+              "value": "={{ $json.contacts[0].wa_id }}",
+              "type": "string"
+            },
+            {
+              "id": "a0b532a5-9702-4b34-869a-cdb83b69f2ca",
+              "name": "senderName",
+              "value": "={{ $json.contacts[0].profile.name }}",
+              "type": "string"
+            },
+            {
+              "id": "5bce6d28-4d8d-4b22-a98c-652c47b23403",
+              "name": "messageId",
+              "value": "={{ $json.messages[0].id }}",
+              "type": "string"
+            },
+            {
+              "id": "d7159f72-e21f-4f9d-b3c8-700ab1d7feb5",
+              "name": "phoneNumberId",
+              "value": "={{ $json.metadata.phone_number_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        -656
+      ],
+      "id": "f5092e34-1ab6-40b0-9de9-99e8b167e340",
+      "name": "Normalize WhatsApp Message"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=التاريخ والوقت الحاليان:\n{{ $now.setZone('Asia/Hebron').toFormat('yyyy-MM-dd HH:mm') }}\n\nرسالة العميل:\n{{ $('Normalize WhatsApp Message').item.json.messageText }}\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=أنت مساعد متخصص في استخراج بيانات حجز المواعيد من رسائل العملاء العربية أو الإنجليزية.\n\nالتاريخ والوقت الحاليان:\n{{ $now.setZone('Asia/Hebron').toFormat('yyyy-MM-dd HH:mm') }}\n\nرسالة العميل:\n{{ $json.messageText }}\n\nأرجع كائن JSON صالحًا فقط، دون Markdown أو شرح أو أي نص إضافي، وبنفس البنية التالية تمامًا:\n\n{\n\"service\": \"\",\n\"date\": \"\",\n\"time\": \"\",\n\"customerName\": \"\",\n\"intent\": \"unknown\",\n\"confirmed\": false\n}\n\nالقواعد:\n\n1. `service`: اسم الخدمة المطلوبة. إذا لم تُذكر بوضوح، أرجع نصًا فارغًا `\"\"`.\n\n2. `date`: تاريخ الموعد بصيغة `YYYY-MM-DD`. إذا لم يُذكر أو تعذّر تحديده بوضوح، أرجع `\"\"`.\n\n3. افهم التعبيرات الزمنية النسبية مثل: اليوم، بكرا، بعد بكرا، الأحد القادم، والأسبوع القادم، اعتمادًا على التاريخ الحالي المذكور أعلاه.\n\n4. إذا ذكر العميل اسم يوم فقط، اختر أقرب تاريخ قادم يوافق ذلك اليوم. لا تختر تاريخًا مضى.\n\n5. `time`: وقت الموعد بصيغة 24 ساعة `HH:mm`. مثال: الساعة 4 مساءً تصبح `16:00`.\n\n6. إذا ذكر العميل ساعة من 1 إلى 12 دون تحديد صباحًا أو مساءً، ودون سياق واضح مثل صباح، ظهر، عصر، مساء أو ليل، فلا تفترض الفترة. أرجع `time` كنص فارغ `\"\"`.\n\n7. الساعات المكتوبة بوضوح بصيغة 24 ساعة، مثل `14:00` أو `21:00`، لا تحتاج إلى توضيح.\n\n8. `customerName`: الاسم الذي يذكره العميل صراحة داخل الرسالة. لا تستخدم اسم حساب واتساب بدلًا منه. إذا لم يذكره، أرجع `\"\"`.\n\n9. `intent` يجب أن تكون واحدة فقط من القيم التالية:\n\n   * `\"new_booking\"` عندما يطلب العميل حجزًا جديدًا أو يرسل تفاصيل موعد جديد.\n   * `\"confirmation\"` عندما يرسل موافقة صريحة على موعد سبق اقتراحه، مثل: نعم، أكد، موافق، تمام احجزه.\n   * `\"unknown\"` عندما لا تكون الرسالة طلب حجز جديدًا ولا تأكيدًا واضحًا.\n\n10. `confirmed` تكون `true` فقط عندما تكون الرسالة تأكيدًا صريحًا لموعد سبق اقتراحه ويكون `intent` مساويًا لـ`\"confirmation\"`.\n\n11. إذا احتوت الرسالة على كلمة مثل «نعم» أو «موافق»، لكنها تضمنت أيضًا تفاصيل طلب حجز جديد، فاعتبرها طلبًا جديدًا:\n\n* `intent = \"new_booking\"`\n* `confirmed = false`\n\n12. عند رسالة تأكيد فقط مثل «نعم» أو «أكد الحجز»:\n\n* أرجع `service` و`date` و`time` و`customerName` كقيم فارغة `\"\"`.\n* اجعل `intent = \"confirmation\"`.\n* اجعل `confirmed = true`.\n\n13. لا تخترع أي معلومة غير موجودة أو لا يمكن استنتاجها بوضوح من الرسالة.\n\n14. استخدم النص الفارغ `\"\"` لجميع البيانات الناقصة أو الغامضة. لا تستخدم `null`.\n\n15. أرجع JSON صالحًا فقط وبالمفاتيح الستة المحددة، دون إضافة مفاتيح أخرى ودون استخدام علامات ``` المحيطة بالكائن.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1120,
+        -656
+      ],
+      "id": "7db39440-b550-45cc-b61c-ee4c782a836a",
+      "name": "Extract Booking Details"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1136,
+        -448
+      ],
+      "id": "c1fec0a0-4ea2-46b2-9c33-3be156397623",
+      "name": "Google Gemini Chat Model"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"service\": \"\",\n  \"date\": \"\",\n  \"time\": \"\",\n  \"customerName\": \"\",\n  \"intent\": \"new_booking\",\n  \"confirmed\": false\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1264,
+        -448
+      ],
+      "id": "5b30f7eb-afd2-47b6-a9ac-2ed8e9d58f74",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_CALENDAR_ID",
+          "mode": "id"
+        },
+        "start": "={{ DateTime.fromISO(\n  $('Get Pending Booking').first().json.date + 'T' +\n  $('Get Pending Booking').first().json.time,\n  { zone: 'Asia/Hebron' }\n).toISO() }}",
+        "end": "={{ DateTime.fromISO(\n  $('Get Pending Booking').first().json.date + 'T' +\n  $('Get Pending Booking').first().json.time,\n  { zone: 'Asia/Hebron' }\n).plus({ hours: 1 }).toISO() }}",
+        "additionalFields": {
+          "description": "={{ 'WhatsApp booking - Phone: ' + $('Normalize WhatsApp Message').first().json.senderPhone }}",
+          "summary": "={{ $('Get Pending Booking').first().json.service + ' - ' + $('Get Pending Booking').first().json.customerName }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        3040,
+        -944
+      ],
+      "id": "32681423-8e00-4699-a959-d3799f1692ef",
+      "name": "Create Confirmed Appointment",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_PENDING_BOOKINGS_TABLE_ID",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "senderPhone",
+              "keyValue": "={{ $('Normalize WhatsApp Message').first().json.senderPhone }}"
+            },
+            {
+              "keyName": "status",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "confirmed",
+            "calendarEventId": "={{ $('Create Confirmed Appointment').first().json.id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "senderPhone",
+              "displayName": "senderPhone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "service",
+              "displayName": "service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "time",
+              "displayName": "time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "customerName",
+              "displayName": "customerName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "expiresAt",
+              "displayName": "expiresAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "calendarEventId",
+              "displayName": "calendarEventId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        3488,
+        -1072
+      ],
+      "id": "40b358a3-ac7b-4257-a196-4278b7047a7c",
+      "name": "Mark Booking Confirmed"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_PENDING_BOOKINGS_TABLE_ID",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "senderPhone",
+              "keyValue": "={{ $('Normalize WhatsApp Message').item.json.senderPhone }}"
+            },
+            {
+              "keyName": "status",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1696,
+        -944
+      ],
+      "id": "42acc036-cd19-434a-8a07-b66c34d617ad",
+      "name": "Get Pending Booking",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ $json.senderPhone }}",
+        "textBody": "=✅ تم تأكيد حجزك بنجاح\n\nالخدمة: {{ $('Get Pending Booking').item.json.service }}\nالاسم: {{ $('Get Pending Booking').item.json.customerName }}\nالتاريخ: {{ $('Get Pending Booking').item.json.date }}\nالوقت: {{ $('Get Pending Booking').item.json.time }}\n\nننتظرك في الموعد 🌷",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        3712,
+        -1072
+      ],
+      "id": "9372ac4a-4f56-45c9-b6fb-b8f0beac791e",
+      "name": "Send Final Confirmation"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ $('Normalize WhatsApp Message').first().json.senderPhone }}",
+        "textBody": "=لا يوجد لديك حجز بانتظار التأكيد حاليًا.\n\nأرسل اسم الخدمة والتاريخ والوقت المطلوب لبدء حجز جديد.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        2224,
+        -736
+      ],
+      "id": "c34c6e48-ffc6-45fe-b0fe-562c31a37502",
+      "name": "No Pending Booking Message"
+    },
+    {
+      "parameters": {
+        "resource": "calendar",
+        "calendar": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_CALENDAR_ID",
+          "mode": "id"
+        },
+        "timeMin": "={{ DateTime.fromISO($json.date + 'T' + $json.time, { zone: 'Asia/Hebron' }).toISO() }}",
+        "timeMax": "={{ DateTime.fromISO($json.date + 'T' + $json.time, { zone: 'Asia/Hebron' }).plus({ hours: 1 }).toISO() }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        2688,
+        -1216
+      ],
+      "id": "b5a14983-25dd-403a-8b35-3fe2c7d667e5",
+      "name": "Recheck Availability"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_PENDING_BOOKINGS_TABLE_ID",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "senderPhone",
+              "keyValue": "={{ $('Normalize WhatsApp Message').item.json.senderPhone }}"
+            },
+            {
+              "keyName": "status",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "unavailable"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "senderPhone",
+              "displayName": "senderPhone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "service",
+              "displayName": "service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "time",
+              "displayName": "time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "customerName",
+              "displayName": "customerName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2944,
+        -640
+      ],
+      "id": "015d195f-8488-4241-9b53-bc4d4f795247",
+      "name": "Mark Booking Unavailable"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ $('Normalize WhatsApp Message').first().json.senderPhone }}",
+        "textBody": "=عذرًا، الموعد بتاريخ {{ $('Get Pending Booking').first().json.date }} الساعة {{ $('Get Pending Booking').first().json.time }} لم يعد متاحًا.\n\nأرسل وقتًا آخر مناسبًا وسأتحقق منه مباشرة.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        3136,
+        -656
+      ],
+      "id": "11c64dcd-9298-4ba8-bffa-9b6b53eb20d2",
+      "name": "Slot No Longer Available"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ $('Normalize WhatsApp Message').first().json.senderPhone }}",
+        "textBody": "=عذرًا، تعذّر تأكيد الموعد بسبب مشكلة تقنية مؤقتة، ولم يتم تسجيل الحجز.\n\nحاول إرسال \"نعم\" مرة أخرى بعد قليل.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        3488,
+        -848
+      ],
+      "id": "4bd783dd-2b17-47ee-93de-1d9c4223d6da",
+      "name": "Calendar Error Message"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_BUSINESS_HOURS_TABLE_ID",
+          "mode": "id"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "weekDay",
+              "keyValue": "={{ DateTime.fromISO($('Extract Booking Details').first().json.output.date).weekday }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2592,
+        -352
+      ],
+      "id": "e84799d3-00a2-457b-9d0a-5e6867f71398",
+      "name": "Get Business Hours"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ $('Normalize WhatsApp Message').first().json.senderPhone }}",
+        "textBody": "=عذرًا، اليوم أو الوقت المطلوب خارج ساعات عمل العيادة.\n\nيرجى إرسال يوم ووقت آخر مناسب.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        3040,
+        -448
+      ],
+      "id": "793befc0-5aa3-4e69-92c8-37246b36e33c",
+      "name": "Outside Business Hours Message"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_CLINIC_HOLIDAYS_TABLE_ID",
+          "mode": "id"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "date",
+              "keyValue": "={{ $('Extract Booking Details').first().json.output.date }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2144,
+        -256
+      ],
+      "id": "0fe44144-a21a-429f-b6db-0c011090c95d",
+      "name": "Get Clinic Holiday",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ $('Normalize WhatsApp Message').first().json.senderPhone }}",
+        "textBody": "=عذرًا، العيادة مغلقة بتاريخ {{ $('Extract Booking Details').first().json.output.date }}.\n\nالسبب: {{ $('Get Clinic Holiday').first().json.reason }}\n\nيرجى اختيار تاريخ آخر.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        2592,
+        -160
+      ],
+      "id": "7ebe3426-6c0f-4e55-9100-f78a7ffa9ee6",
+      "name": "Clinic Holiday Message"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ $('Normalize WhatsApp Message').first().json.senderPhone }}",
+        "textBody": "={{\n(() => {\n  const data = $('Extract Booking Details').first().json.output;\n  const missing = [];\n\n  if (!data.service) missing.push('اسم الخدمة');\n  if (!data.date) missing.push('التاريخ المطلوب');\n  if (!data.time) missing.push('الوقت مع تحديد صباحًا أو مساءً، مثل: 9 صباحًا أو 9 مساءً');\n  if (!data.customerName) missing.push('اسمك');\n\n  return `حتى أساعدك في الحجز، أرسل المعلومات الناقصة:\\n\\n${missing.map(field => `• ${field}`).join('\\n')}`;\n})()\n}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1920,
+        -640
+      ],
+      "id": "1c69a9f7-d13e-40f0-885c-bf7faed9f7f5",
+      "name": "Missing Booking Details"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ $('Normalize WhatsApp Message').first().json.senderPhone }}",
+        "textBody": "=عذرًا، لا يمكن حجز موعد في وقت أو تاريخ مضى.\n\nيرجى إرسال موعد قادم مناسب.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        2144,
+        -544
+      ],
+      "id": "0319059e-a1b2-4e19-b82e-55be816b3f15",
+      "name": "Past Appointment Message"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ $('Normalize WhatsApp Message').first().json.senderPhone }}",
+        "textBody": "=عذرًا، الموعد بتاريخ {{ $('Extract Booking Details').first().json.output.date }} الساعة {{ $('Extract Booking Details').first().json.output.time }} غير متاح.\n\nيرجى إرسال وقت آخر مناسب.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        3488,
+        -160
+      ],
+      "id": "ed1db26c-db2c-4b8b-8ef1-097ce73a5e47",
+      "name": "Appointment Unavailable Message"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cd36a672-a48b-4ebb-a3eb-05b037a2aa54",
+              "leftValue": "={{\n  !/(بدي|أريد|اريد|حاب|حابة|أرغب|ارغب).*(أحجز|احجز|حجز)/i\n    .test($('Normalize WhatsApp Message').first().json.messageText)\n  &&\n  (\n    ['نعم', 'أجل', 'اجل', 'أكد', 'اكد', 'موافق', 'تمام', 'yes', 'confirm']\n      .includes($('Normalize WhatsApp Message').first().json.messageText.trim().toLowerCase())\n    ||\n    $('Extract Booking Details').first().json.output.confirmed === true\n    ||\n    ['confirm_booking', 'confirmation']\n      .includes($('Extract Booking Details').first().json.output.intent)\n  )\n}}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1472,
+        -656
+      ],
+      "id": "5e02587d-65ce-4eed-8140-b59572259206",
+      "name": "Is Confirmation Message?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d582068b-d3de-4562-9346-bd2a54984bc7",
+              "leftValue": "={{    !$json.output.service ||   !$json.output.date ||   !$json.output.time ||   !$json.output.customerName }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1696,
+        -448
+      ],
+      "id": "6fdeca14-0c7d-4424-8c70-1ae1456d82b5",
+      "name": "Are Booking Details Complete?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "011a745b-048f-4027-a7e2-af9e7aa4dcc6",
+              "leftValue": "={{   DateTime.fromISO(     $json.output.date + 'T' + $json.output.time,     { zone: 'Asia/Hebron' }   ) <= $now.setZone('Asia/Hebron') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1920,
+        -352
+      ],
+      "id": "21403bc1-05d2-4c20-8b78-86aea14286ca",
+      "name": "Is Appointment Date Valid?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4e620669-d631-4673-a114-8f52a9580d3e",
+              "leftValue": "={{ $json.date }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2368,
+        -256
+      ],
+      "id": "b95a1eeb-f9e4-4ff3-bcf2-eb9386bb51df",
+      "name": "Is Clinic Closed for Holiday?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c5a9364c-0c1b-487f-9fc8-7637b88e6f1a",
+              "leftValue": "={{\n  !$json.isOpen ||\n  $('Extract Booking Details').first().json.output.time <\n    DateTime.fromISO($json.openTime).setZone('Asia/Hebron').toFormat('HH:mm') ||\n  $('Extract Booking Details').first().json.output.time >=\n    DateTime.fromISO($json.closeTime).setZone('Asia/Hebron').toFormat('HH:mm')\n}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2816,
+        -352
+      ],
+      "id": "ed61eb38-c43d-4d7d-92ff-c5357fb7df08",
+      "name": "Is Outside Business Hours?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4c7d60a6-d4ef-427b-9fd4-8f9478253145",
+              "leftValue": "={{ $json.available }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3264,
+        -256
+      ],
+      "id": "ded525a2-19a9-47a0-b662-dde9e9638977",
+      "name": "Is Time Slot Available?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "dee2e151-6e92-4751-9a35-a6cd5efb21c9",
+              "leftValue": "={{ $json.senderPhone }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1920,
+        -944
+      ],
+      "id": "5f02f9fa-c060-4d14-b4fb-a44694484fe5",
+      "name": "Does Pending Booking Exist?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6880efdb-8dcc-4959-9801-82d0498a215a",
+              "leftValue": "={{ $json.available }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2672,
+        -688
+      ],
+      "id": "1f4aca4f-a5ff-4170-990e-26cd8e51df51",
+      "name": "Is Slot Still Available?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "eccb06f9-bc38-4dcb-b1c8-6fe29dee61a2",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3264,
+        -1024
+      ],
+      "id": "284fce54-7c30-420a-9284-c3cc81280fd0",
+      "name": "Was Calendar Event Created?"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_PROCESSED_MESSAGES_TABLE_ID",
+          "mode": "id"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "messageId",
+              "keyValue": "={{ $('Normalize WhatsApp Message').first().json.messageId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        -656
+      ],
+      "id": "99097cef-114f-4865-8c3a-e8fb537be1bd",
+      "name": "Get Processed Message",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d7fae4da-862e-47e6-8e6f-1c6f985d41c2",
+              "leftValue": "={{ !!$json.messageId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        -656
+      ],
+      "id": "d2659140-b259-4bcf-802f-41782728d40e",
+      "name": "Is Duplicate Message?"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_PROCESSED_MESSAGES_TABLE_ID",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "messageId": "={{ $('Normalize WhatsApp Message').item.json.messageId }}",
+            "senderPhone": "={{ $('Normalize WhatsApp Message').item.json.senderPhone }}",
+            "processedAt": "={{ $now }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "messageId",
+              "displayName": "messageId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "senderPhone",
+              "displayName": "senderPhone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "processedAt",
+              "displayName": "processedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        -656
+      ],
+      "id": "61255b17-40c6-42a8-8d97-4ac64d25c09e",
+      "name": "Store Processed Message"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_PENDING_BOOKINGS_TABLE_ID",
+          "mode": "id"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "senderPhone",
+              "keyValue": "={{ $('Normalize WhatsApp Message').first().json.senderPhone }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "senderPhone": "={{ $('Normalize WhatsApp Message').item.json.senderPhone }}",
+            "service": "={{ $('Extract Booking Details').item.json.output.service }}",
+            "date": "={{ $('Extract Booking Details').item.json.output.date }}",
+            "time": "={{ $('Extract Booking Details').item.json.output.time }}",
+            "customerName": "={{ $('Extract Booking Details').item.json.output.customerName }}",
+            "status": "pending",
+            "expiresAt": "={{ $now.plus({ minutes: 15 }).toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "senderPhone",
+              "displayName": "senderPhone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "service",
+              "displayName": "service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "time",
+              "displayName": "time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "customerName",
+              "displayName": "customerName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "expiresAt",
+              "displayName": "expiresAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "calendarEventId",
+              "displayName": "calendarEventId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        3568,
+        -288
+      ],
+      "id": "e6f9439d-d629-4f48-979e-9b4b9adef82a",
+      "name": "Save Pending Booking"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "195ba424-e371-49ec-bc7d-2cf39a32d953",
+              "leftValue": "={{   DateTime.fromISO($json.expiresAt).toMillis() <= $now.toMillis() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2176,
+        -1024
+      ],
+      "id": "6ec2ffce-3d1d-4118-bdc6-d3644d95f06a",
+      "name": "Is Pending Booking Expired?"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ $json.senderPhone }}",
+        "textBody": "={{  `الموعد متاح ✅  الخدمة: ${$('Extract Booking Details').first().json.output.service} التاريخ: ${$('Extract Booking Details').first().json.output.date} الوقت: ${$('Extract Booking Details').first().json.output.time}  هل تريد تأكيد الحجز؟ اكتب نعم أو أكد.` }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        3872,
+        -304
+      ],
+      "id": "f1174fec-f8a1-41f3-a2ae-f33370a63b09",
+      "name": "Ask for Booking Confirmation"
+    },
+    {
+      "parameters": {
+        "resource": "calendar",
+        "calendar": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_CALENDAR_ID",
+          "mode": "id"
+        },
+        "timeMin": "={{\n  DateTime.fromISO(\n    $('Extract Booking Details').item.json.output.date + 'T' +  $('Extract Booking Details').item.json.output.time,\n    { zone: 'Asia/Hebron' }\n  ).toISO()\n}}",
+        "timeMax": "={{\n  DateTime.fromISO(\n    $('Extract Booking Details').item.json.output.date + 'T' + $('Extract Booking Details').item.json.output.time,\n    { zone: 'Asia/Hebron' }\n  ).plus({ hours: 1 }).toISO()\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        3040,
+        -256
+      ],
+      "id": "1b00c41f-42a2-402a-a552-a3897f9fc555",
+      "name": "Check Initial Availability"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_PENDING_BOOKINGS_TABLE_ID",
+          "mode": "id"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "={{ $('Get Pending Booking').first().json.id }}",
+              "keyName": "id"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "expired"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "senderPhone",
+              "displayName": "senderPhone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "service",
+              "displayName": "service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "time",
+              "displayName": "time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "customerName",
+              "displayName": "customerName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "expiresAt",
+              "displayName": "expiresAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2368,
+        -1264
+      ],
+      "id": "466ff957-f02e-4478-af2c-4df5a65026f0",
+      "name": "Mark Booking Expired"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "YOUR_WHATSAPP_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "={{ $('Normalize WhatsApp Message').first().json.senderPhone }}",
+        "textBody": "=انتهت مهلة تأكيد الحجز ⏳\n\nيرجى إرسال تفاصيل الموعد مرة أخرى لأتحقق من توفره.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        2704,
+        -1456
+      ],
+      "id": "d43cd74c-f725-4ab8-ade1-eb4d0948d89e",
+      "name": "Booking Expired Message"
+    }
+  ],
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract Booking Details",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Extract Booking Details",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Confirmed Appointment": {
+      "main": [
+        [
+          {
+            "node": "Was Calendar Event Created?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Calendar Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Booking Confirmed": {
+      "main": [
+        [
+          {
+            "node": "Send Final Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Pending Booking": {
+      "main": [
+        [
+          {
+            "node": "Does Pending Booking Exist?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recheck Availability": {
+      "main": [
+        [
+          {
+            "node": "Is Slot Still Available?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Booking Unavailable": {
+      "main": [
+        [
+          {
+            "node": "Slot No Longer Available",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Business Hours": {
+      "main": [
+        [
+          {
+            "node": "Is Outside Business Hours?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Clinic Holiday": {
+      "main": [
+        [
+          {
+            "node": "Is Clinic Closed for Holiday?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Confirmation Message?": {
+      "main": [
+        [
+          {
+            "node": "Get Pending Booking",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Are Booking Details Complete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Are Booking Details Complete?": {
+      "main": [
+        [
+          {
+            "node": "Missing Booking Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Appointment Date Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Appointment Date Valid?": {
+      "main": [
+        [
+          {
+            "node": "Past Appointment Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Clinic Holiday",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Clinic Closed for Holiday?": {
+      "main": [
+        [
+          {
+            "node": "Clinic Holiday Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Business Hours",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Outside Business Hours?": {
+      "main": [
+        [
+          {
+            "node": "Outside Business Hours Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Initial Availability",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Time Slot Available?": {
+      "main": [
+        [
+          {
+            "node": "Save Pending Booking",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Appointment Unavailable Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Does Pending Booking Exist?": {
+      "main": [
+        [
+          {
+            "node": "Is Pending Booking Expired?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Pending Booking Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Slot Still Available?": {
+      "main": [
+        [
+          {
+            "node": "Create Confirmed Appointment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Booking Unavailable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Was Calendar Event Created?": {
+      "main": [
+        [
+          {
+            "node": "Mark Booking Confirmed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Calendar Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Processed Message": {
+      "main": [
+        [
+          {
+            "node": "Is Duplicate Message?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Duplicate Message?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Store Processed Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Pending Booking": {
+      "main": [
+        [
+          {
+            "node": "Ask for Booking Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Pending Booking Expired?": {
+      "main": [
+        [
+          {
+            "node": "Mark Booking Expired",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Recheck Availability",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Initial Availability": {
+      "main": [
+        [
+          {
+            "node": "Is Time Slot Available?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Booking Expired": {
+      "main": [
+        [
+          {
+            "node": "Booking Expired Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Get Processed Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Booking Details": {
+      "main": [
+        [
+          {
+            "node": "Is Confirmation Message?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Processed Message": {
+      "main": [
+        [
+          {
+            "node": "Extract Booking Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "c0cShP4kPe492Pgd",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "e0cb5962-aa83-4045-ba4a-55f1eb6cc53e",
+  "nodeGroups": [],
+  "id": "hb0YR6uvHLEE29df",
+  "tags": []
+}
