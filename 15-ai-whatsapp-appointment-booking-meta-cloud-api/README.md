@@ -10,6 +10,7 @@ The agent understands Arabic and English booking requests, validates the request
 
 - Official WhatsApp Cloud API trigger and replies
 - AI extraction of service, date, time, customer name, intent, and confirmation
+- Natural greeting detection with a dedicated welcome response
 - Structured Output Parser for predictable JSON
 - Relative-date understanding such as “tomorrow” and “next Sunday”
 - Clarification of ambiguous times such as “9” without AM/PM
@@ -32,7 +33,7 @@ The agent understands Arabic and English booking requests, validates the request
 2. Normalize the sender, message text, message ID, and phone-number ID.
 3. Ignore webhook retries that contain an already processed message ID.
 4. Extract structured booking information with Gemini.
-5. Route explicit confirmations separately from new booking requests.
+5. Route greetings, explicit confirmations, and new booking requests separately.
 6. Validate required information, date, holidays, and working hours.
 7. Check Google Calendar availability.
 8. Store an available request as `pending` for 15 minutes.
@@ -105,6 +106,8 @@ Create these tables before configuring the imported workflow.
 ## Tested scenarios
 
 - Complete new booking request
+- Standalone Arabic or English greeting
+- Greeting combined with a booking request
 - Missing service, date, time, or customer name
 - Ambiguous 12-hour time without AM/PM
 - Past appointment date
