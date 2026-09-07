@@ -1,5 +1,4 @@
 {
-  "name": "09 - AI Gmail Lead Qualification & CRM",
   "nodes": [
     {
       "parameters": {
@@ -16,15 +15,18 @@
             "YOUR_AI_LEADS_LABEL_ID"
           ]
         },
-        "options": {}
+        "options": {},
+        "labelIds": [
+          "YOUR_AI_LEADS_LABEL_ID"
+        ]
       },
       "type": "n8n-nodes-base.gmailTrigger",
       "typeVersion": 1.4,
       "position": [
-        0,
-        64
+        -640,
+        448
       ],
-      "id": "4b835806-ed87-4537-91ef-543ef6d42b4f",
+      "id": "d8ea659d-fb3d-4fdb-b8f1-52d3315f091d",
       "name": "Gmail Trigger"
     },
     {
@@ -74,15 +76,15 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.5,
       "position": [
-        224,
-        64
+        -416,
+        448
       ],
-      "id": "ede6ed6c-ff94-4215-aa08-740736becc9c",
+      "id": "3ce3b1df-8fa3-4820-bb58-0006dc914816",
       "name": "Normalize Email"
     },
     {
       "parameters": {
-        "text": "={{\n  'Sender: ' + $json.sender +\n  '\\nSubject: ' + $json.subject +\n  '\\nMessage:\\n' + $json.message\n}}",
+        "text": "={{\n  'Sender: ' + $('Normalize Email').first().json.sender +\n  '\\nSubject: ' + $('Normalize Email').first().json.subject +\n  '\\nMessage:\\n' + $('Normalize Email').first().json.message\n}}",
         "schemaType": "fromJson",
         "jsonSchemaExample": "{\n  \"isLead\": true,\n  \"name\": \"Sarah Ahmed\",\n  \"email\": \"sarah@brightdental.example\",\n  \"phone\": \"+970599123456\",\n  \"company\": \"Bright Dental Clinic\",\n  \"service\": \"AI automation for lead qualification and appointment booking\",\n  \"budget\": 1500,\n  \"timelineDays\": 14,\n  \"summary\": \"Dental clinic needs a WhatsApp automation system to qualify leads and book appointments.\",\n  \"missingFields\": []\n}",
         "options": {
@@ -92,10 +94,10 @@
       "type": "@n8n/n8n-nodes-langchain.informationExtractor",
       "typeVersion": 1.2,
       "position": [
-        448,
-        64
+        256,
+        208
       ],
-      "id": "19d15dd9-ef58-443d-8ed2-89da9a31e1f9",
+      "id": "124cff05-f4ab-4503-a1ad-049af24bdb24",
       "name": "Extract Lead Information",
       "retryOnFail": true,
       "waitBetweenTries": 2000,
@@ -109,10 +111,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1.1,
       "position": [
-        520,
-        280
+        328,
+        424
       ],
-      "id": "567760e4-4df4-4f2f-af9f-f48e604e5fee",
+      "id": "a4a759a5-41bd-47fa-b526-c58d08d54267",
       "name": "Google Gemini Chat Model"
     },
     {
@@ -122,103 +124,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        800,
-        -112
+        608,
+        240
       ],
-      "id": "dbbabe6a-7582-4ac9-9eef-9221fcdbcb74",
+      "id": "36c1ca03-82cd-4f11-9c65-7d6aed36e387",
       "name": "Calculate Lead Score"
-    },
-    {
-      "parameters": {
-        "rules": {
-          "values": [
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 3
-                },
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.leadStatus }}",
-                    "rightValue": "Hot",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    },
-                    "id": "a0ebcf8b-962a-4cb5-b701-da220b5f6fe9"
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "Hot"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 3
-                },
-                "conditions": [
-                  {
-                    "id": "47590b03-d899-4ceb-b601-75927d583a95",
-                    "leftValue": "={{ $json.leadStatus }}",
-                    "rightValue": "Warm",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "Warm"
-            },
-            {
-              "conditions": {
-                "options": {
-                  "caseSensitive": true,
-                  "leftValue": "",
-                  "typeValidation": "strict",
-                  "version": 3
-                },
-                "conditions": [
-                  {
-                    "id": "6ddae610-b628-4d37-9eed-0e3a42c6d4d9",
-                    "leftValue": "={{ $json.leadStatus }}",
-                    "rightValue": "Cold",
-                    "operator": {
-                      "type": "string",
-                      "operation": "equals"
-                    }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "renameOutput": true,
-              "outputKey": "Cold"
-            }
-          ]
-        },
-        "options": {
-          "fallbackOutput": "extra",
-          "renameFallbackOutput": "Not a lead"
-        }
-      },
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.4,
-      "position": [
-        1024,
-        -144
-      ],
-      "id": "add5f878-19c0-426c-9113-598ff1671ce9",
-      "name": "Route Lead Status"
     },
     {
       "parameters": {
@@ -398,10 +308,10 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
       "position": [
-        1248,
-        -208
+        1056,
+        160
       ],
-      "id": "039d8076-92a7-4c6f-a2b8-ae82e049c04f",
+      "id": "83382cbd-0e43-449f-9c2c-eea021342c94",
       "name": "Save Lead to CRM",
       "retryOnFail": true,
       "waitBetweenTries": 2000,
@@ -410,8 +320,8 @@
     {
       "parameters": {
         "sendTo": "YOUR_SALES_EMAIL@example.com",
-        "subject": "={{ '🔥 Hot Lead: ' + $json.name + ' — Score ' + $json.leadScore }}",
-        "message": "={{\n  '<div style=\"font-family:Arial,sans-serif;max-width:650px;color:#222\">' +\n    '<h2 style=\"color:#d93025\">🔥 New Hot Lead</h2>' +\n    '<p>A new high-priority lead requires immediate follow-up.</p>' +\n\n    '<table style=\"width:100%;border-collapse:collapse\">' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Name</strong></td><td style=\"padding:8px;border:1px solid #ddd\">' + $json.name + '</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Company</strong></td><td style=\"padding:8px;border:1px solid #ddd\">' + $json.company + '</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Email</strong></td><td style=\"padding:8px;border:1px solid #ddd\">' + $json.email + '</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Phone</strong></td><td style=\"padding:8px;border:1px solid #ddd\">' + $json.phone + '</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Budget</strong></td><td style=\"padding:8px;border:1px solid #ddd\">$' + $json.budget + '</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Timeline</strong></td><td style=\"padding:8px;border:1px solid #ddd\">' + $json.timelineDays + ' days</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Lead Score</strong></td><td style=\"padding:8px;border:1px solid #ddd\"><strong>' + $json.leadScore + '/100</strong></td></tr>' +\n    '</table>' +\n\n    '<h3>Requested Service</h3>' +\n    '<p>' + $json.service + '</p>' +\n\n    '<h3>Summary</h3>' +\n    '<p>' + $json.summary + '</p>' +\n\n    '<h3>Qualification Reasons</h3>' +\n    '<ul><li>' + ($json.scoreReasons || []).join('</li><li>') + '</li></ul>' +\n  '</div>'\n}}",
+        "subject": "={{ '🔥 Hot Lead: ' + $('Calculate Lead Score').first().json.name + ' — Score ' + $('Calculate Lead Score').first().json.leadScore }}",
+        "message": "={{\n  '<div style=\"font-family:Arial,sans-serif;max-width:650px;color:#222\">' +\n    '<h2 style=\"color:#d93025\">🔥 New Hot Lead</h2>' +\n    '<p>A new high-priority lead requires immediate follow-up.</p>' +\n\n    '<table style=\"width:100%;border-collapse:collapse\">' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Name</strong></td><td style=\"padding:8px;border:1px solid #ddd\">' + $('Calculate Lead Score').first().json.name + '</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Company</strong></td><td style=\"padding:8px;border:1px solid #ddd\">' + $('Calculate Lead Score').first().json.company + '</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Email</strong></td><td style=\"padding:8px;border:1px solid #ddd\">' + $('Calculate Lead Score').first().json.email + '</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Phone</strong></td><td style=\"padding:8px;border:1px solid #ddd\">' + $('Calculate Lead Score').first().json.phone + '</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Budget</strong></td><td style=\"padding:8px;border:1px solid #ddd\">$' + $('Calculate Lead Score').first().json.budget + '</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Timeline</strong></td><td style=\"padding:8px;border:1px solid #ddd\">' + $('Calculate Lead Score').first().json.timelineDays + ' days</td></tr>' +\n      '<tr><td style=\"padding:8px;border:1px solid #ddd\"><strong>Lead Score</strong></td><td style=\"padding:8px;border:1px solid #ddd\"><strong>' + $('Calculate Lead Score').first().json.leadScore + '/100</strong></td></tr>' +\n    '</table>' +\n\n    '<h3>Requested Service</h3>' +\n    '<p>' + $('Calculate Lead Score').first().json.service + '</p>' +\n\n    '<h3>Summary</h3>' +\n    '<p>' + $('Calculate Lead Score').first().json.summary + '</p>' +\n\n    '<h3>Qualification Reasons</h3>' +\n    '<ul><li>' + ($('Calculate Lead Score').first().json.scoreReasons || []).join('</li><li>') + '</li></ul>' +\n  '</div>'\n}}",
         "options": {
           "appendAttribution": false
         }
@@ -419,12 +329,11 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        1248,
-        112
+        1504,
+        16
       ],
-      "id": "06de7e48-c7fa-406e-85d6-d09cc00ee924",
+      "id": "5e2feb2e-4ba3-4f51-b5c1-0a0cfa2c7267",
       "name": "Notify Sales Team",
-      "webhookId": "34b57e27-36fe-4a92-aa3e-4f3f65ee00eb",
       "retryOnFail": true,
       "waitBetweenTries": 2000,
       "onError": "continueErrorOutput"
@@ -434,23 +343,22 @@
         "operation": "addLabels",
         "messageId": "={{ $('Normalize Email').item.json.emailId }}",
         "labelIds": [
-          "YOUR_AI_PROCESSED_LABEL_ID"
+          "YOUR_PROCESSED_LABEL_ID"
         ]
       },
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        1472,
-        192
+        1728,
+        496
       ],
-      "id": "ae9dbb38-d081-4eb8-b5da-7e33c53c5445",
-      "name": "Mark as Processed",
-      "webhookId": "6db00e6f-336b-4d76-a779-6d3de628bd99"
+      "id": "f92614ed-e5e5-4a32-8510-43b8283cdd20",
+      "name": "Mark as Processed"
     },
     {
       "parameters": {
         "operation": "removeLabels",
-        "messageId": "={{ $json.id }}",
+        "messageId": "={{ $('Normalize Email').first().json.emailId }}",
         "labelIds": [
           "YOUR_AI_LEADS_LABEL_ID"
         ]
@@ -458,33 +366,253 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        1696,
-        192
+        1952,
+        496
       ],
-      "id": "a2f626e5-788f-442c-b86b-6a0912b49ce8",
-      "name": "Remove AI-Leads Label",
-      "webhookId": "4ccfa3fc-814e-4afe-9ba6-324fe503d9f5"
+      "id": "35d31853-0f69-4d76-931b-a2539c9e552d",
+      "name": "Remove AI-Leads Label"
     },
     {
       "parameters": {
         "operation": "addLabels",
         "messageId": "={{ $('Normalize Email').item.json.emailId }}",
         "labelIds": [
-          "YOUR_AI_ERRORS_LABEL_ID"
+          "YOUR_ANALYSIS_ERROR_LABEL_ID"
         ]
       },
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.2,
       "position": [
-        1664,
-        -48
+        1728,
+        304
       ],
-      "id": "5d72a709-4178-4fe5-a94a-7c6efc293c87",
-      "name": "Mark Analysis Error",
-      "webhookId": "6db00e6f-336b-4d76-a779-6d3de628bd99"
+      "id": "dcee983c-f928-4093-bb3a-92e35cf4cddf",
+      "name": "Mark Analysis Error"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "30158176-61d7-4433-9141-8dceaac23e15",
+              "leftValue": "={{ $json['Lead Status'] }}",
+              "rightValue": "Hot",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1280,
+        96
+      ],
+      "id": "af1caac9-53ab-4daa-affe-7b03cdb2c9ad",
+      "name": "Is Hot Lead?"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_PROCESSED_EMAILS_TABLE_ID",
+          "mode": "id"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "emailId",
+              "keyValue": "={{ $('Normalize Email').first().json.emailId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -192,
+        448
+      ],
+      "id": "f3c7144e-ba09-4b3e-9b05-5e74b044160b",
+      "name": "Get Processed Email",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5e9e3a8c-fb39-4618-8dcf-917c9cfa968b",
+              "leftValue": "={{ $json.emailId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        32,
+        448
+      ],
+      "id": "6e5f435c-9b40-4a41-bd8d-8701f529376d",
+      "name": "Is Duplicate Email?"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_PROCESSED_EMAILS_TABLE_ID",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "emailId": "={{ $('Normalize Email').first().json.emailId }}",
+            "status": "={{ $('Calculate Lead Score').first().json.leadStatus }}",
+            "processedAt": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "emailId",
+              "displayName": "emailId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "processedAt",
+              "displayName": "processedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2176,
+        496
+      ],
+      "id": "301ad034-ded0-4516-b520-1acbccf22da2",
+      "name": "Save Processed Email"
+    },
+    {
+      "parameters": {
+        "operation": "removeLabels",
+        "messageId": "={{ $('Normalize Email').first().json.emailId }}",
+        "labelIds": [
+          "YOUR_AI_LEADS_LABEL_ID"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        320,
+        608
+      ],
+      "id": "4f43743d-0456-436f-b811-706b2208a3b4",
+      "name": "Remove Duplicate Label"
+    },
+    {
+      "parameters": {
+        "operation": "removeLabels",
+        "messageId": "={{ $('Normalize Email').first().json.emailId }}",
+        "labelIds": [
+          "YOUR_AI_LEADS_LABEL_ID"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1952,
+        304
+      ],
+      "id": "c8fe0917-db79-4f1e-93b4-4774a95ad0e6",
+      "name": "Remove Failed Lead Label"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5445af60-d9d0-43d0-9050-00b139114bd4",
+              "leftValue": "={{ $json.isLead }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        832,
+        240
+      ],
+      "id": "6b65dc2d-49a8-4d59-a918-a4e3d252584e",
+      "name": "Is Valid Lead?"
     }
   ],
-  "pinData": {},
   "connections": {
     "Gmail Trigger": {
       "main": [
@@ -501,19 +629,8 @@
       "main": [
         [
           {
-            "node": "Extract Lead Information",
+            "node": "Get Processed Email",
             "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Google Gemini Chat Model": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Extract Lead Information",
-            "type": "ai_languageModel",
             "index": 0
           }
         ]
@@ -537,48 +654,22 @@
         ]
       ]
     },
-    "Calculate Lead Score": {
-      "main": [
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
         [
           {
-            "node": "Route Lead Status",
-            "type": "main",
+            "node": "Extract Lead Information",
+            "type": "ai_languageModel",
             "index": 0
           }
         ]
       ]
     },
-    "Route Lead Status": {
+    "Calculate Lead Score": {
       "main": [
         [
           {
-            "node": "Save Lead to CRM",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Notify Sales Team",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Save Lead to CRM",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Save Lead to CRM",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Mark as Processed",
+            "node": "Is Valid Lead?",
             "type": "main",
             "index": 0
           }
@@ -587,7 +678,13 @@
     },
     "Save Lead to CRM": {
       "main": [
-        [],
+        [
+          {
+            "node": "Is Hot Lead?",
+            "type": "main",
+            "index": 0
+          }
+        ],
         [
           {
             "node": "Mark Analysis Error",
@@ -626,18 +723,95 @@
         ]
       ]
     },
-    "Remove AI-Leads Label": null
+    "Remove AI-Leads Label": {
+      "main": [
+        [
+          {
+            "node": "Save Processed Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Analysis Error": {
+      "main": [
+        [
+          {
+            "node": "Remove Failed Lead Label",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Hot Lead?": {
+      "main": [
+        [
+          {
+            "node": "Notify Sales Team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark as Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Processed Email": {
+      "main": [
+        [
+          {
+            "node": "Is Duplicate Email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Duplicate Email?": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicate Label",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract Lead Information",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Valid Lead?": {
+      "main": [
+        [
+          {
+            "node": "Save Lead to CRM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark as Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "active": false,
-  "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate"
-  },
-  "versionId": "ba650052-a2ee-4658-8594-1323d5671de3",
-  "meta": {
-    "templateCredsSetupCompleted": true
-  },
-  "nodeGroups": [],
-  "id": "nCC0e1ehxWvqyI7y",
-  "tags": []
+  "pinData": {},
+  "meta": {},
+  "active": false
 }
