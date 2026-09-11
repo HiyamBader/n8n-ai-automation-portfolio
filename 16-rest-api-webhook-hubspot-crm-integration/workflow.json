@@ -1,0 +1,894 @@
+{
+  "name": "16 - REST API Webhook & HubSpot CRM Integration",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "crm-lead",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -416,
+        48
+      ],
+      "id": "95dabcf3-ab8b-4cb0-a94a-3e51d50ebf14",
+      "name": "Receive Lead Webhook",
+      "webhookId": "71d3e374-daed-458c-a1c7-a018e1b2a332",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "KsORdbfmKhJojRO7",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7ac30108-261e-4d4e-99c4-15b4bec981a6",
+              "name": "requestId",
+              "value": "={{ $json.body.requestId?.toString().trim() || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "d848b1a6-c791-4299-9cf7-fec4ea062933",
+              "name": "email",
+              "value": "={{ $json.body.email?.toString().trim().toLowerCase() || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "223cd5e5-32d5-46b2-982d-01a8e0762f15",
+              "name": "firstName",
+              "value": "={{ $json.body.name?.toString().trim().split(/\\s+/)[0] || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "cb73b84d-971d-4762-8829-1269e07fc967",
+              "name": "lastName",
+              "value": "={{ $json.body.name?.toString().trim().split(/\\s+/).slice(1).join(' ') || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "fce378ad-c1a6-4341-8237-ec00c2867fea",
+              "name": "phone",
+              "value": "={{ $json.body.phone?.toString().trim() || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "8da430c2-92e3-4eb6-88fd-b02a8eedb829",
+              "name": "company",
+              "value": "={{ $json.body.company?.toString().trim() || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "0f6a47b2-61cc-43a1-b47a-a370df5761b2",
+              "name": "service",
+              "value": "={{ $json.body.service?.toString().trim() || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "05a67e25-256c-49de-b997-b72e437d8a60",
+              "name": "budget",
+              "value": "={{ Number($json.body.budget || 0) }}",
+              "type": "number"
+            },
+            {
+              "id": "14805a4a-aadc-4335-ae97-c413fbcacd43",
+              "name": "source",
+              "value": "={{ $json.body.source?.toString().trim() || 'API' }}",
+              "type": "string"
+            },
+            {
+              "id": "7ad90f07-be55-4452-8d42-6b586088bbc1",
+              "name": "receivedAt",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -192,
+        48
+      ],
+      "id": "8a11647a-36b5-4f86-a228-b104e9d9dcce",
+      "name": "Normalize Lead Data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "62167b15-3ed4-469b-afec-b64ce63c35b1",
+              "leftValue": "={{ $json.requestId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "982ae5f9-c20e-4ea8-9997-55956c950449",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        32,
+        48
+      ],
+      "id": "a4bd9f5d-386c-4c68-8ee1-dc189553829f",
+      "name": "Is Lead Payload Valid?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4b4b99a6-4437-4964-a742-4083718f7030",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "1f7dee64-bd74-49b5-acb8-b0ea336977e5",
+              "name": "statusCode",
+              "value": 400,
+              "type": "number"
+            },
+            {
+              "id": "e2212ba9-1df7-49df-a5be-f082c6797255",
+              "name": "error",
+              "value": "Invalid request",
+              "type": "string"
+            },
+            {
+              "id": "cc0bd3c6-8e8f-4015-8b15-60808ce1cdc6",
+              "name": "message",
+              "value": "requestId and a valid email are required",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1376,
+        336
+      ],
+      "id": "456a9479-2e9e-4425-8af7-2a9f29375ce0",
+      "name": "Prepare Invalid Response"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "Kh0gVDlIVDjQhwxo",
+          "mode": "list",
+          "cachedResultName": "api_request_log",
+          "cachedResultUrl": "/projects/0ulXa4njFB2SQRJ5/datatables/Kh0gVDlIVDjQhwxo"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "requestId",
+              "keyValue": "={{ $('Normalize Lead Data').item.json.requestId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        256,
+        -48
+      ],
+      "id": "042579e5-42e5-4a7e-9f1c-98b35057c1f7",
+      "name": "Get row(s)",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b8b64bcb-919b-4bc2-a9a8-9d83a27c8151",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        480,
+        -48
+      ],
+      "id": "ca70fcdf-cc83-4c10-b9d2-1cbe2fd655c7",
+      "name": "Is Duplicate Request?"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "Kh0gVDlIVDjQhwxo",
+          "mode": "list",
+          "cachedResultName": "api_request_log",
+          "cachedResultUrl": "/projects/0ulXa4njFB2SQRJ5/datatables/Kh0gVDlIVDjQhwxo"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "requestId": "={{ $('Normalize Lead Data').item.json.requestId }}",
+            "email": "={{ $('Normalize Lead Data').item.json.email }}",
+            "status": "processing",
+            "operation": "pending",
+            "processedAt": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "requestId",
+              "displayName": "requestId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "hubspotContactId",
+              "displayName": "hubspotContactId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "operation",
+              "displayName": "operation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "processedAt",
+              "displayName": "processedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "errorMessage",
+              "displayName": "errorMessage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        704,
+        48
+      ],
+      "id": "08608eb0-36a4-4046-b092-8cf393d14ddc",
+      "name": "Reserve Request ID"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d722d2c9-3d10-485e-806c-c752a1397b17",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "780557df-7c9e-4d5b-aab3-8294502f1ac6",
+              "name": "duplicate",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "e8f17aa1-85f2-447f-a2b0-4f2a6b7959a2",
+              "name": "statusCode",
+              "value": 200,
+              "type": "number"
+            },
+            {
+              "id": "9ae1ed04-3be8-43f4-92d9-87009700e235",
+              "name": "requestId",
+              "value": "={{ $('Normalize Lead Data').item.json.requestId }}",
+              "type": "string"
+            },
+            {
+              "id": "cbfb582e-9401-446a-bf53-fec568e1df27",
+              "name": "message",
+              "value": "Request already processed",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1376,
+        -240
+      ],
+      "id": "1a892e7a-b894-403d-acf9-11a0dc8232a5",
+      "name": "Prepare Duplicate Response"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "Kh0gVDlIVDjQhwxo",
+          "mode": "list",
+          "cachedResultName": "api_request_log",
+          "cachedResultUrl": "/projects/0ulXa4njFB2SQRJ5/datatables/Kh0gVDlIVDjQhwxo"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "requestId",
+              "keyValue": "={{ $('Normalize Lead Data').item.json.requestId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "completed",
+            "hubspotContactId": "={{ $('Create or Update HubSpot Contact').item.json.vid.toString() }}",
+            "operation": "created_or_updated",
+            "processedAt": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "requestId",
+              "displayName": "requestId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "hubspotContactId",
+              "displayName": "hubspotContactId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "operation",
+              "displayName": "operation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "processedAt",
+              "displayName": "processedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "errorMessage",
+              "displayName": "errorMessage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1152,
+        -48
+      ],
+      "id": "904b6011-829e-4674-86b1-d61322b36b55",
+      "name": "Mark Request Completed"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "email": "={{ $('Normalize Lead Data').item.json.email }}",
+        "additionalFields": {
+          "companyName": "={{ $('Normalize Lead Data').item.json.company }}",
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "requested_service",
+                "value": "={{ $('Normalize Lead Data').item.json.service }}"
+              },
+              {
+                "property": "lead_budget",
+                "value": "={{ $('Normalize Lead Data').item.json.budget }}"
+              },
+              {
+                "property": "lead_source",
+                "value": "={{ $('Normalize Lead Data').item.json.source }}"
+              },
+              {
+                "property": "external_request_id",
+                "value": "={{ $('Normalize Lead Data').item.json.requestId }}"
+              }
+            ]
+          },
+          "firstName": "={{ $('Normalize Lead Data').item.json.firstName }}",
+          "lastName": "={{ $('Normalize Lead Data').item.json.lastName }}",
+          "phoneNumber": "={{ $('Normalize Lead Data').item.json.phone }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        928,
+        48
+      ],
+      "id": "9b25e047-c1c0-4105-8bc5-537bf3db822b",
+      "name": "Create or Update HubSpot Contact",
+      "retryOnFail": true,
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "C0e5qwaNofp4Fetl",
+          "name": "HubSpot Service Key account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode }}"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1600,
+        48
+      ],
+      "id": "3f0eb5e9-6b2a-4f4f-9e12-7e453ad32fa7",
+      "name": "Send API Response"
+    },
+    {
+      "parameters": {
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "value": "Kh0gVDlIVDjQhwxo",
+          "mode": "list",
+          "cachedResultName": "api_request_log",
+          "cachedResultUrl": "/projects/0ulXa4njFB2SQRJ5/datatables/Kh0gVDlIVDjQhwxo"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "requestId",
+              "keyValue": "={{ $('Normalize Lead Data').item.json.requestId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1152,
+        144
+      ],
+      "id": "df80e23e-a90d-4d86-a13d-f32d5ebc3b97",
+      "name": "Release Failed Request"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f36229cf-3b19-4910-97ba-ae87bfc8463c",
+              "name": "success",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "c598fb24-f46a-4e96-945c-f2714775ea4d",
+              "name": "statusCode",
+              "value": 502,
+              "type": "number"
+            },
+            {
+              "id": "4fcaa3be-3329-4472-a27c-dabb280da03d",
+              "name": "requestId",
+              "value": "={{ $('Normalize Lead Data').item.json.requestId }}",
+              "type": "string"
+            },
+            {
+              "id": "5c22f177-3183-4fdb-9af2-12c0e9a45d12",
+              "name": "error",
+              "value": "HubSpot integration failed",
+              "type": "string"
+            },
+            {
+              "id": "8086ef43-09d3-4a59-88a1-fadb0d9a78ee",
+              "name": "message",
+              "value": "The request can be retried safely",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1376,
+        144
+      ],
+      "id": "613fee31-e493-40a8-b34d-3d78a9664029",
+      "name": "Prepare HubSpot Error Response"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d722d2c9-3d10-485e-806c-c752a1397b17",
+              "name": "success",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "780557df-7c9e-4d5b-aab3-8294502f1ac6",
+              "name": "duplicate",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "e8f17aa1-85f2-447f-a2b0-4f2a6b7959a2",
+              "name": "statusCode",
+              "value": 200,
+              "type": "number"
+            },
+            {
+              "id": "9ae1ed04-3be8-43f4-92d9-87009700e235",
+              "name": "requestId",
+              "value": "={{ $('Normalize Lead Data').item.json.requestId }}",
+              "type": "string"
+            },
+            {
+              "id": "eff3f66b-4172-4ed6-89ae-e3d2195e9f32",
+              "name": "hubspotContactId",
+              "value": "={{ $('Create or Update HubSpot Contact').item.json.vid.toString() }}",
+              "type": "string"
+            },
+            {
+              "id": "cbfb582e-9401-446a-bf53-fec568e1df27",
+              "name": "message",
+              "value": "Contact created or updated successfully",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1376,
+        -48
+      ],
+      "id": "05a3dec0-fc10-42e7-9364-4887b901fb1a",
+      "name": "Prepare Success Response"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Receive Lead Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Lead Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Lead Data": {
+      "main": [
+        [
+          {
+            "node": "Is Lead Payload Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Lead Payload Valid?": {
+      "main": [
+        [
+          {
+            "node": "Get row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Invalid Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)": {
+      "main": [
+        [
+          {
+            "node": "Is Duplicate Request?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Duplicate Request?": {
+      "main": [
+        [
+          {
+            "node": "Prepare Duplicate Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reserve Request ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve Request ID": {
+      "main": [
+        [
+          {
+            "node": "Create or Update HubSpot Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or Update HubSpot Contact": {
+      "main": [
+        [
+          {
+            "node": "Mark Request Completed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Release Failed Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Request Completed": {
+      "main": [
+        [
+          {
+            "node": "Prepare Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Invalid Response": {
+      "main": [
+        [
+          {
+            "node": "Send API Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Duplicate Response": {
+      "main": [
+        [
+          {
+            "node": "Send API Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Release Failed Request": {
+      "main": [
+        [
+          {
+            "node": "Prepare HubSpot Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare HubSpot Error Response": {
+      "main": [
+        [
+          {
+            "node": "Send API Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Success Response": {
+      "main": [
+        [
+          {
+            "node": "Send API Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "526b3860-6023-4f4c-98e3-45971ffba999",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "288eadb0abd5883d85b1c09d9eae069277b5465dee1b79545f7521dac36b2609"
+  },
+  "nodeGroups": [],
+  "id": "t1QhQ0ghk7gtZntc",
+  "tags": []
+}
