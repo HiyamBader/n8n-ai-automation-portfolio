@@ -1,167 +1,210 @@
-# AI Gmail Lead Qualification & CRM
+# REST API Webhook & HubSpot CRM Integration
 
-An end-to-end lead qualification workflow built with **n8n**, **Gmail**, **Google Gemini**, and **Google Sheets**. It monitors labeled inquiry emails, extracts structured lead information, calculates a deterministic score, stores qualified leads in a lightweight CRM, prevents duplicate processing, and immediately alerts the sales team about high-value opportunities.
+An n8n workflow that exposes a secured REST API endpoint for receiving CRM leads, validating and normalizing their data, and creating or updating contacts in HubSpot.
+
+The workflow includes API-key authentication, idempotency protection, input validation, automatic retries, safe failure recovery, and structured HTTP responses.
 
 ![Workflow overview](assets/workflow-overview.png)
 
 ## Features
 
-- Monitors Gmail for new inquiries using the `AI-Leads` label
-- Extracts structured lead data with Google Gemini
-- Handles incomplete inquiries without inventing missing information
-- Calculates a transparent lead score from budget, timeline, completeness, company, and contact details
-- Classifies messages as `Hot`, `Warm`, `Cold`, or `Not a Lead`
-- Saves qualified leads to Google Sheets
-- Sends a formatted HTML email alert for Hot leads only
-- Marks completed messages as `AI-Processed`
-- Prevents duplicate processing using an n8n Data Table keyed by Gmail message ID
-- Retries temporary Gemini, Google Sheets, and Gmail failures
-- Marks failed items with `AI-Errors` for manual review
+- Receives lead data through a `POST` webhook.
+- Protects the endpoint with an `x-api-key` header.
+- Normalizes names, email addresses, phone numbers, company details, service, budget, and source.
+- Validates the request ID and email address before processing.
+- Prevents duplicate processing using an n8n Data Table.
+- Creates or updates HubSpot contacts using email as the unique identifier.
+- Stores custom CRM fields for service, budget, source, and external request ID.
+- Retries temporary HubSpot failures automatically.
+- Releases failed request reservations so the same request can be retried safely.
+- Returns clear `200`, `400`, `403`, and `502` responses.
 
-## Workflow
+## Workflow Logic
 
-```text
-Gmail Trigger
-    ↓
-Normalize Email
-    ↓
-Check processed_emails Data Table
-    ├── Duplicate → Remove AI-Leads Label → Stop
-    └── New Email
-          ↓
-Extract Lead Information (Gemini)
-          ↓
-Calculate Lead Score
-          ↓
-Is Valid Lead?
-    ├── False → Mark as Processed
-    └── True → Save Lead to CRM
-                  ↓
-              Is Hot Lead?
-        ├── True → Sales Email Alert
-        └── False
-                  ↓
-          Mark as Processed
-                  ↓
-          Remove AI-Leads Label
-                  ↓
-          Save Processed Email
-```
+1. Receive and authenticate the webhook request.
+2. Normalize the incoming lead data.
+3. Validate `requestId` and `email`.
+4. Check whether the request ID has already been processed.
+5. Return a duplicate response when the request already exists.
+6. Reserve new request IDs before calling HubSpot.
+7. Create or update the HubSpot contact.
+8. Mark successful requests as completed.
+9. Delete the reservation after a HubSpot failure, allowing a safe retry.
+10. Return a structured JSON response.
 
-Errors from Gemini, Google Sheets, or the sales notification are labeled with `AI-Errors`. The `AI-Leads` label is then removed to prevent endless retries while keeping the failed message available for manual review.
+## Technologies
 
-## Extracted Lead Fields
+- n8n
+- HubSpot CRM API
+- n8n Data Tables
+- REST API and Webhooks
+- Header authentication
+- PowerShell or cURL for API testing
 
-- Name
-- Email
-- Phone
-- Company
-- Requested service
-- Budget
-- Timeline in days
-- Summary
-- Missing fields
+## Required Credentials
 
-## Lead Scoring
+Create these credentials in n8n after importing the workflow:
 
-The score is deterministic and can be customized for each business.
+1. **Header Auth**
+   - Header name: `x-api-key`
+   - Header value: generate a strong secret and keep it private.
 
-| Factor | Maximum points |
-|---|---:|
-| Budget | 40 |
-| Timeline | 30 |
-| Information completeness | 20 |
-| Company provided | 5 |
-| Complete contact details | 5 |
+2. **HubSpot Private App Token**
+   - The private app needs permission to read and write CRM contacts.
 
-| Status | Score |
-|---|---:|
-| Hot | 70–100 |
-| Warm | 40–69 |
-| Cold | 0–39 |
-| Not a Lead | Non-sales email |
+Credential values are not included in the exported workflow.
 
-## Google Sheets Columns
+## HubSpot Custom Properties
 
-Create a spreadsheet named `AI CRM Leads` with these headers in the first row:
+Create the following contact properties in HubSpot before running the workflow:
 
-```text
-Email ID
-Received At
-Name
-Email
-Phone
-Company
-Service
-Budget
-Timeline Days
-Lead Score
-Lead Status
-Summary
-Missing Fields
-Score Reasons
-Source
-```
+| Label | Internal name | Type |
+|---|---|---|
+| Requested Service | `requested_service` | Single-line text |
+| Lead Budget | `lead_budget` | Number or currency |
+| Lead Source | `lead_source` | Single-line text |
+| Request ID | `external_request_id` | Single-line text |
 
-## Processed Emails Data Table
+## Data Table Setup
 
-Create an n8n Data Table named `processed_emails` with these columns:
+Create an n8n Data Table named `api_request_log` with these columns:
 
 | Column | Type |
 |---|---|
-| `emailId` | String |
+| `requestId` | String |
+| `email` | String |
 | `status` | String |
-| `processedAt` | Date & Time |
+| `hubspotContactId` | String |
+| `operation` | String |
+| `processedAt` | Date & time |
+| `errorMessage` | String |
 
-After importing the workflow, select this table in both `Get Processed Email` and `Save Processed Email`.
+After importing the workflow, select your own Data Table in every Data Table node because table IDs are environment-specific.
 
-## Gmail Labels
+## Request Body
 
-Create these labels before configuring the workflow:
+```json
+{
+  "requestId": "lead-001",
+  "name": "Sara Khaled",
+  "email": "sara.khaled@example.com",
+  "phone": "+970599101010",
+  "company": "Sara Clinic",
+  "service": "WhatsApp Automation",
+  "budget": 1600,
+  "source": "Website"
+}
+```
 
-- `AI-Leads` — new inquiries waiting for processing
-- `AI-Processed` — successfully analyzed emails
-- `AI-Errors` — items requiring manual review
+Only `requestId` and a valid `email` are required. The remaining fields are optional.
 
-A Gmail filter can automatically apply `AI-Leads` to messages sent to a dedicated sales address or Gmail plus alias such as `yourname+leads@gmail.com`.
+## PowerShell Test
 
-## Setup
+```powershell
+$crmApiKey = Read-Host "Enter the CRM API key"
+
+Invoke-RestMethod -Method Post `
+  -Uri "https://YOUR_N8N_HOST/webhook/crm-lead" `
+  -Headers @{ "x-api-key" = $crmApiKey } `
+  -ContentType "application/json" `
+  -Body (@{
+    requestId = "lead-001"
+    name = "Sara Khaled"
+    email = "sara.khaled@example.com"
+    phone = "+970599101010"
+    company = "Sara Clinic"
+    service = "WhatsApp Automation"
+    budget = 1600
+    source = "Website"
+  } | ConvertTo-Json)
+```
+
+## cURL Test
+
+```bash
+curl -X POST "https://YOUR_N8N_HOST/webhook/crm-lead" \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_API_KEY" \
+  -d '{
+    "requestId": "lead-001",
+    "name": "Sara Khaled",
+    "email": "sara.khaled@example.com",
+    "phone": "+970599101010",
+    "company": "Sara Clinic",
+    "service": "WhatsApp Automation",
+    "budget": 1600,
+    "source": "Website"
+  }'
+```
+
+## Example Responses
+
+Successful create or update:
+
+```json
+{
+  "success": true,
+  "duplicate": false,
+  "statusCode": 200,
+  "requestId": "lead-001",
+  "hubspotContactId": "HUBSPOT_CONTACT_ID",
+  "message": "Contact created or updated successfully"
+}
+```
+
+Duplicate request:
+
+```json
+{
+  "success": true,
+  "duplicate": true,
+  "statusCode": 200,
+  "requestId": "lead-001",
+  "message": "Request already processed"
+}
+```
+
+Invalid request:
+
+```json
+{
+  "success": false,
+  "statusCode": 400,
+  "error": "Invalid request",
+  "message": "requestId and a valid email are required"
+}
+```
+
+Temporary HubSpot failure:
+
+```json
+{
+  "success": false,
+  "statusCode": 502,
+  "requestId": "lead-001",
+  "error": "HubSpot integration failed",
+  "message": "The request can be retried safely"
+}
+```
+
+## Import and Run
 
 1. Import `workflow.json` into n8n.
-2. Configure Gmail OAuth credentials for the trigger and Gmail actions.
-3. Configure a Google Gemini API credential.
-4. Configure Google Sheets OAuth credentials.
-5. Create the required Gmail labels and replace the placeholder label IDs in the workflow.
-6. Create the `processed_emails` Data Table and select it in both Data Table nodes.
-7. Select your Google Sheets document and worksheet in `Save Lead to CRM`.
-8. Replace `YOUR_SALES_EMAIL@example.com` in `Notify Sales Team`.
-9. Create a Gmail filter that applies `AI-Leads` to incoming inquiries.
-10. Save, publish, and activate the workflow.
+2. Create and select the Header Auth credential.
+3. Create and select the HubSpot private app credential.
+4. Create the required HubSpot custom properties.
+5. Create the `api_request_log` Data Table and select it in all Data Table nodes.
+6. Test the workflow with the webhook test URL.
+7. Activate the workflow and use the production webhook URL.
 
-## Tested Scenarios
+## Security Notes
 
-- Complete high-budget inquiry → Hot lead, one CRM row, and one sales alert
-- Medium-priority inquiry → Warm lead and CRM row without an alert
-- Early-stage inquiry without a defined budget or timeline → Cold lead and CRM row without an alert
-- Newsletter or verification email → Not a Lead, skipped by CRM, and marked as processed
-- Missing fields → Safe empty values and a populated `missingFields` list
-- Reprocessing the same Gmail message → detected as a duplicate and stopped before AI analysis
-- Temporary external-service errors → automatic retries followed by the `AI-Errors` label when unsuccessful
-
-## Security
-
-- Credentials, API keys, personal email addresses, spreadsheet IDs, Data Table IDs, and Gmail label IDs are not included in the public workflow.
-- Use dedicated client credentials and apply least-privilege access in production.
-- Review the scoring rules and data-retention requirements before processing real customer information.
-
-## Possible Extensions
-
-- HubSpot, Salesforce, Airtable, or another CRM instead of Google Sheets
-- Automatic follow-up emails for Warm and Cold leads
-- Slack, Telegram, or Microsoft Teams sales alerts
-- Multilingual qualification rules
-- Analytics dashboard and conversion reporting
+- Never commit API keys or HubSpot private app tokens.
+- Use HTTPS for public production endpoints.
+- Rotate a key immediately if it is exposed.
+- Store secrets only in n8n Credentials or another secure secret manager.
 
 ## Author
 
-**Hiyam Bader**
+**Hiyam Bader**  
+n8n, API integration, CRM automation, and AI automation.
