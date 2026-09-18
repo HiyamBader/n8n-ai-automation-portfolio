@@ -1,0 +1,712 @@
+{
+  "name": "WooCommerce Orders & Inventory Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "74fd0c66-23fa-40e8-a278-92fbed1b74d5",
+              "leftValue": "={{ $json.orderId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        368,
+        224
+      ],
+      "id": "f8a1393c-5456-4703-aeb8-c29c47a2f351",
+      "name": "Is Duplicate Order?"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_N8N_DATA_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Processed WooCommerce Orders"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "orderId",
+              "keyValue": "={{ $json.orderId }}"
+            }
+          ]
+        },
+        "limit": 1
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        144,
+        224
+      ],
+      "id": "cf034dae-2df1-4ddc-a8fd-dc9146c93b49",
+      "name": "Check If Order Already Processed",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "sendTo": "YOUR_ALERT_EMAIL@example.com",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.emailBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1712,
+        320
+      ],
+      "id": "976ee1f5-8ba7-41d0-98c7-bb17aea7e459",
+      "name": "Send Inventory Alert",
+      "webhookId": "aa8c1900-8eac-4775-b9a4-d5e6c9f4abc3",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "84733c27-19a3-44aa-b5e1-4dd5cb0bd35f",
+              "name": "alertType",
+              "value": "={{ $json.stock_quantity <= 0 ? 'OUT_OF_STOCK' : 'LOW_STOCK' }}",
+              "type": "string"
+            },
+            {
+              "id": "4254d4ad-86d9-4702-8e90-9fa76970073a",
+              "name": "subject",
+              "value": "={{ $json.stock_quantity <= 0   ? '🚨 Out of Stock: ' + $json.name + ' [' + $json.sku + ']'   : '⚠️ Low Stock: ' + $json.name + ' [' + $json.sku + ']' }}",
+              "type": "string"
+            },
+            {
+              "id": "a5b90cc1-7106-41a4-9ad8-942de23167c7",
+              "name": "emailBody",
+              "value": "={{ 'Inventory Alert\\n\\n' + 'Product: ' + $json.name + '\\n' + 'SKU: ' + $json.sku + '\\n' + 'Current Stock: ' + $json.stock_quantity + '\\n' + 'Low Stock Threshold: ' + $json.low_stock_amount + '\\n\\n' + ($json.stock_quantity <= 0   ? 'Action required: Product is OUT OF STOCK.'   : 'Action required: Product stock is running low.') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1488,
+        320
+      ],
+      "id": "2c5a243a-5d01-4091-a2f0-80c7148ebdf3",
+      "name": "Prepare Inventory Alert"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.stock_quantity }}",
+                    "rightValue": 0,
+                    "operator": {
+                      "type": "number",
+                      "operation": "lte"
+                    },
+                    "id": "4d13153e-a84d-49f9-882e-211a76f36702"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Out of Stock"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "04bd065e-0981-428a-b9dd-ebff8451d912",
+                    "leftValue": "={{ $json.stock_quantity }}",
+                    "rightValue": "={{ $json.low_stock_amount }}",
+                    "operator": {
+                      "type": "number",
+                      "operation": "lte"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Low Stock"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "9ab91079-1cac-4990-8e10-5ba9dee5c483",
+                    "leftValue": "={{ $json.stock_quantity }}",
+                    "rightValue": "={{ $json.low_stock_amount }}",
+                    "operator": {
+                      "type": "number",
+                      "operation": "gt"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Stock Ok"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1264,
+        304
+      ],
+      "id": "0a4c7833-ba36-4a77-95a3-1b6f0230c91d",
+      "name": "Check Stock Status"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "productId": "={{ $json.lineItems.product_id }}"
+      },
+      "type": "n8n-nodes-base.wooCommerce",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        224
+      ],
+      "id": "ca2ac3a4-8b42-4d8c-b3dc-318eabde93ac",
+      "name": "Get Product Stock",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "wooCommerceApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "WooCommerce account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "lineItems",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        816,
+        224
+      ],
+      "id": "c164bb81-8a83-4893-8a86-47997f78f770",
+      "name": "Split Order Items"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9b424c32-5d14-49c6-bcc5-dda48e8c72de",
+              "name": "orderId",
+              "value": "={{ $json.body.id }}",
+              "type": "string"
+            },
+            {
+              "id": "83a9d4cd-4f05-43bb-b57b-c06f31567705",
+              "name": "orderNumber",
+              "value": "={{ $json.body.number }}",
+              "type": "string"
+            },
+            {
+              "id": "a84a5567-03ae-4eab-a7d0-d66d2929b155",
+              "name": "status",
+              "value": "={{ $json.body.status }}",
+              "type": "string"
+            },
+            {
+              "id": "a1e998a5-ea53-49cf-ab72-928081cc6033",
+              "name": "currency",
+              "value": "={{ $json.body.currency }}",
+              "type": "string"
+            },
+            {
+              "id": "3f3e6cb9-9fca-46c5-b4df-e252fecd468c",
+              "name": "total",
+              "value": "={{ $json.body.total }}",
+              "type": "string"
+            },
+            {
+              "id": "87041e7c-cebe-437a-b798-6e2489b2c170",
+              "name": "customerEmail",
+              "value": "={{ $json.body.billing.email }}",
+              "type": "string"
+            },
+            {
+              "id": "7e26d48f-1640-4fc4-8afe-b68dbd1bc39e",
+              "name": "customerName",
+              "value": "={{ ($json.body.billing.first_name + ' ' + $json.body.billing.last_name).trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "c86f9c09-01e2-46b5-8d87-62353de197b4",
+              "name": "lineItems",
+              "value": "={{ $json.body.line_items }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -80,
+        224
+      ],
+      "id": "ff624d25-0c58-439e-baeb-34bd0537a0ef",
+      "name": "Normalize Order Data"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "WooCommerce Inventory Log"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $now.toFormat('yyyy-MM-dd HH:mm:ss') }}",
+            "Order Number": "={{ $('Split Order Items').item.json.orderNumber }}",
+            "Product": "={{ $json.name }}",
+            "SKU": "={{ $json.sku }}",
+            "Ordered Qty": "={{ $('Split Order Items').item.json.lineItems.quantity }}",
+            "Current Stock": "={{ $json.stock_quantity }}",
+            "Low Stock Threshold": "={{ $json.low_stock_amount }}",
+            "Status": "={{ $json.stock_quantity <= 0 ? 'OUT_OF_STOCK' : ($json.stock_quantity <= $json.low_stock_amount ? 'LOW_STOCK' : 'OK') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Order Number",
+              "displayName": "Order Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Product",
+              "displayName": "Product",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "SKU",
+              "displayName": "SKU",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Ordered Qty",
+              "displayName": "Ordered Qty",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Current Stock",
+              "displayName": "Current Stock",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Low Stock Threshold",
+              "displayName": "Low Stock Threshold",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1264,
+        112
+      ],
+      "id": "1b10a9e1-81fe-4868-aa52-b25c9f5f444e",
+      "name": "Log Inventory Status",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "YOUR_N8N_DATA_TABLE_ID",
+          "mode": "list",
+          "cachedResultName": "Processed WooCommerce Orders"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "orderId": "={{ $('Normalize Order Data').first().json.orderId }}",
+            "orderNumber": "={{ $('Normalize Order Data').first().json.orderNumber }}",
+            "processedAt": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "orderId",
+              "displayName": "orderId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "orderNumber",
+              "displayName": "orderNumber",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "processedAt",
+              "displayName": "processedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1712,
+        112
+      ],
+      "id": "1a73e6eb-9eba-47bd-a554-acb7d943f255",
+      "name": "Mark Order As Processed"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1488,
+        112
+      ],
+      "id": "e7d41913-f1b6-4ff9-a44c-34101799b3a0",
+      "name": "One Item Per Order"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c86f9c09-01e2-46b5-8d87-62353de197b4",
+              "name": "lineItems",
+              "value": "={{ $('Normalize Order Data').first().json.lineItems }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        592,
+        224
+      ],
+      "id": "ff0dbd17-618e-4fa7-9db9-24beb9cf60d4",
+      "name": "Restore Line Items"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "woocommerce-order-created",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -304,
+        224
+      ],
+      "id": "cd214ddd-1150-4a4b-9a33-077a312ac236",
+      "name": "WooCommerce Order Created",
+      "webhookId": "5659df44-fe78-4509-91c6-581b898c91dc"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Is Duplicate Order?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Restore Line Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Order Already Processed": {
+      "main": [
+        [
+          {
+            "node": "Is Duplicate Order?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Inventory Alert": {
+      "main": [
+        [
+          {
+            "node": "Send Inventory Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Stock Status": {
+      "main": [
+        [
+          {
+            "node": "Prepare Inventory Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Inventory Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Product Stock": {
+      "main": [
+        [
+          {
+            "node": "Check Stock Status",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Inventory Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Order Items": {
+      "main": [
+        [
+          {
+            "node": "Get Product Stock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Order Data": {
+      "main": [
+        [
+          {
+            "node": "Check If Order Already Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Inventory Status": {
+      "main": [
+        [
+          {
+            "node": "One Item Per Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "One Item Per Order": {
+      "main": [
+        [
+          {
+            "node": "Mark Order As Processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Line Items": {
+      "main": [
+        [
+          {
+            "node": "Split Order Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WooCommerce Order Created": {
+      "main": [
+        [
+          {
+            "node": "Normalize Order Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "dadd92a9-8025-43e5-a895-3ce3ba5cb4c5",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "nodeGroups": [],
+  "id": "JnsAfQFpxrpabTGy",
+  "tags": []
+}
