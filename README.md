@@ -21,8 +21,18 @@ A collection of practical n8n workflows demonstrating AI automation, conversatio
 - [15 -WhatsApp AI Appointment Booking Agent – Meta Cloud API](whatsapp-ai-appointment-booking-meta-cloud-api)
 - [16 - AI Gmail Lead Qualification & HubSpot CRM](16-ai-gmail-lead-qualification-crm)
 - [17 - WooCommerce Orders & Inventory Automation](17-woocommerce-orders-inventory-automation)
+- [18 - AI Customer Support Agent - RAG & Human Handoff](18-ai-customer-support-rag-human-handoff)
 
-## Featured Project
+## Featured Projects
+
+### 18 - AI Customer Support Agent - RAG & Human Handoff
+
+A production-oriented AI customer support system combining RAG-based answers, conversation-state management, explicit human-handoff detection, atomic message idempotency, and resilient failure recovery.
+
+The workflow uses a Supabase/PostgreSQL knowledge base with vector search, structured AI output, Gmail notifications with Telegram fallback, stale-processing recovery, retry strategies, and controlled error responses.
+
+[View the project](18-ai-customer-support-rag-human-handoff)
+
 
 
 ### 17 - WooCommerce Orders & Inventory Automation
@@ -64,10 +74,14 @@ Across the portfolio, the workflows demonstrate:
 - Data logging and operational monitoring
 - API authentication and validation
 - Human-in-the-loop workflow patterns
+- RAG with vector search and knowledge-base retrieval
+- Atomic message idempotency and stale-processing recovery
+- Notification fallback and failure logging
 
 ## Technologies
 
 - n8n
+- OpenAI
 - Google Gemini
 - HubSpot CRM
 - WooCommerce
@@ -79,12 +93,14 @@ Across the portfolio, the workflows demonstrate:
 - Webhooks and REST APIs
 - LangChain components
 - Structured AI output
+- Supabase / PostgreSQL
+- pgvector
 - Docker
 
 ## About
 
 This portfolio focuses on practical business automation systems built with n8n.
 
-The projects cover AI-powered customer support, appointment booking, CRM and lead automation, WooCommerce order processing, inventory monitoring, document processing, content automation, and knowledge-base assistants.
+The projects cover AI-powered customer support with RAG and human handoff, appointment booking, CRM and lead automation, WooCommerce order processing, inventory monitoring, document processing, content automation, and knowledge-base assistants.
 
 The workflows are designed to go beyond simple demos by incorporating validation, duplicate prevention, retries, error handling, logging, security, and recovery strategies.

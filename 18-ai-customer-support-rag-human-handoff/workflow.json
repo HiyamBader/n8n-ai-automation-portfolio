@@ -1,0 +1,2749 @@
+{
+  "name": "18 - AI Customer Support Agent - RAG & Human Handoff",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Search the uploaded documents for relevant information.\nAlways use this tool before answering.",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        2168,
+        1752
+      ],
+      "id": "f8233d3c-6b67-4a45-b763-e290ae1d4212",
+      "name": "retrieve a document",
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6322a454-855b-4c62-b5d1-ab6553cdf8e3",
+              "name": "messageId",
+              "value": "={{ $json.body.messageId }}",
+              "type": "string"
+            },
+            {
+              "id": "72a867e2-ee4f-4359-b4d9-90d719a543ee",
+              "name": "customerId",
+              "value": "={{ $json.body.customerId }}",
+              "type": "string"
+            },
+            {
+              "id": "0c5b0347-73a0-4065-8047-9542ed07c8a6",
+              "name": "name",
+              "value": "={{ $json.body.name }}",
+              "type": "string"
+            },
+            {
+              "id": "3fea56ef-2cb5-4a7a-96f0-19cb5919062e",
+              "name": "email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "6e2a2255-dc76-482b-a39c-b27fdaed07c7",
+              "name": "message",
+              "value": "={{ $json.body.message }}",
+              "type": "string"
+            },
+            {
+              "id": "44e66e8d-b9f6-4cba-aaf7-78a947c7e5ec",
+              "name": "conversationId",
+              "value": "={{ $json.body.conversationId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -1600,
+        1888
+      ],
+      "id": "ec5b8b31-120b-4230-b942-d43317443ebb",
+      "name": "Normalize Input"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-customer-support",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1824,
+        1888
+      ],
+      "id": "949f88a7-c01f-4c15-b499-8a3e855a8317",
+      "name": "Customer Support Webhook",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "YOUR_HEADER_AUTH_CREDENTIAL",
+          "name": "YOUR_HEADER_AUTH_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "02905039-e437-409c-9ae7-f70d20d8cfb8",
+              "leftValue": "={{ $json.messageId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "14fa34c4-8346-4a18-b13c-63e6601d0696",
+              "leftValue": "={{ $json.message }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1296,
+        1888
+      ],
+      "id": "8803beb6-d5da-41a3-be2c-c249596fb570",
+      "name": "Validate Input"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": false,\n  \"error\": \"messageId and message are required\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -1008,
+        1984
+      ],
+      "id": "3f48b3d2-23bf-4572-bfbb-54b9cb98d281",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "support_conversations",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $('Normalize Input').item.json.conversationId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        544
+      ],
+      "id": "3659a6ca-5511-46e5-9bab-4f66a71f3b11",
+      "name": "Find Active Conversation",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ddfdff46-4838-4aa6-a3a2-28d1f24e6e42",
+              "leftValue": "={{ $('Normalize Input').item.json.conversationId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        560,
+        1536
+      ],
+      "id": "265a7632-b82f-4721-bbbc-9ee0345af584",
+      "name": "Conversation Exists?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b82cf48a-828b-4c73-b133-db8387b9e17a",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1232,
+        624
+      ],
+      "id": "cff803e0-c044-429d-a3d9-de3731d88fc9",
+      "name": "Conversation Found?",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "tableId": "=support_conversations",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "customer_id",
+              "fieldValue": "={{ $('Normalize Input').item.json.customerId }}"
+            },
+            {
+              "fieldId": "customer_name",
+              "fieldValue": "={{ $('Normalize Input').item.json.name }}"
+            },
+            {
+              "fieldId": "customer_email",
+              "fieldValue": "={{ $('Normalize Input').item.json.email }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "AI_ACTIVE"
+            },
+            {
+              "fieldId": "initial_message_id",
+              "fieldValue": "={{ $('Normalize Input').first().json.messageId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        784,
+        2176
+      ],
+      "id": "dbe01ab4-e0c2-4cef-83a8-aa6a89af70f0",
+      "name": "Create a row",
+      "retryOnFail": false,
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "AI_ACTIVE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "4d671ac2-7122-4d6b-ae9b-826ea373bd28"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "AI_ACTIVE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "60a0245e-079b-4ecb-94a9-0d786413c562",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "HUMAN_ACTIVE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "HUMAN_ACTIVE"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "f48aafdc-b9ec-4b9f-bacf-434bc73d5074",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "CLOSED",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "CLOSED"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1456,
+        1808
+      ],
+      "id": "d130c563-4df2-4f84-86bc-dc91d9d6d078",
+      "name": "Check Conversation Status"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": false,\n  \"error\": \"Conversation not found\"\n}",
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1744,
+        576
+      ],
+      "id": "26bd3c2e-af4d-47ed-be0a-0ab385a6a674",
+      "name": "Conversation Not Found Response"
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $('Normalize Input').item.json.message }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "HUMAN_REQUEST",
+              "description": "Classify as HUMAN_REQUEST only when the customer explicitly asks to speak with, be transferred to, or receive help from a human agent, employee, representative, or real person.  Do NOT classify complaints, refunds, returns, order problems, frustration, or difficult support issues as HUMAN_REQUEST unless the customer explicitly asks for a human."
+            },
+            {
+              "category": "AI_SUPPORT",
+              "description": "Any customer support message where the customer does not explicitly request a human agent, including refunds, returns, order issues, complaints, questions, and product support."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1.1,
+      "position": [
+        1680,
+        1200
+      ],
+      "id": "d178ee80-66ea-4478-9650-cabef1242ed5",
+      "name": "Detect Human Handoff Request",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1752,
+        1464
+      ],
+      "id": "00ebe687-80fe-4e02-8dc8-bc5ee2172ab0",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOUR_GEMINI_CREDENTIAL",
+          "name": "YOUR_GEMINI_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "fileId",
+                "value": "={{ $('Google Drive Trigger').item.json.id }}"
+              },
+              {
+                "name": "fileName",
+                "value": "={{ $('Google Drive Trigger').item.json.name }}"
+              },
+              {
+                "name": "webViewLink",
+                "value": "={{ $('Google Drive Trigger').item.json.webViewLink }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -1368,
+        2520
+      ],
+      "id": "66072d6f-a069-4795-b930-d0940172155b",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "YOUR_KNOWLEDGE_BASE_FOLDER_ID",
+          "mode": "list",
+          "cachedResultName": "Knowledge Base",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/YOUR_KNOWLEDGE_BASE_FOLDER_ID"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1824,
+        2288
+      ],
+      "id": "74ab8d57-88a6-4526-820b-d632b501ef71",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL",
+          "name": "YOUR_GOOGLE_DRIVE_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1600,
+        2288
+      ],
+      "id": "2b6c7ce7-565f-4e46-af3d-a79521655577",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_GOOGLE_DRIVE_CREDENTIAL",
+          "name": "YOUR_GOOGLE_DRIVE_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -1360,
+        2288
+      ],
+      "id": "167507c4-5ba6-4bef-acb6-723d4622599d",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 150,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        -1288,
+        2728
+      ],
+      "id": "730c7598-615c-4e90-bc01-2bf0fffb7ff0",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2248,
+        1960
+      ],
+      "id": "fe80a0fc-b771-4504-a441-bc4ecb657860",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL",
+          "name": "YOUR_OPENAI_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"action\": {\n      \"type\": \"string\",\n      \"enum\": [\"ANSWER\", \"HANDOFF\"]\n    },\n    \"answer\": {\n      \"type\": [\"string\", \"null\"]\n    },\n    \"handoffReason\": {\n      \"type\": [\"string\", \"null\"]\n    }\n  },\n  \"required\": [\"action\", \"answer\", \"handoffReason\"],\n  \"additionalProperties\": false\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2456,
+        1752
+      ],
+      "id": "789714e1-d74e-421a-b56d-52eac6b6d768",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Normalize Input').first().json.message }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an AI customer support agent.\n\nYour job is to help customers using ONLY information retrieved from the \"retrieve a document\" knowledge base tool.\n\nRules:\n\n1. Always use the \"retrieve a document\" tool before answering a customer support question.\n\n2. Never invent information or use unsupported knowledge.\n\n3. If the knowledge base contains enough information to answer the customer's question:\n   - Answer clearly and concisely.\n   - Set action to \"ANSWER\".\n\n4. If the knowledge base does not contain enough relevant information:\n   - Do not guess.\n   - Set action to \"HANDOFF\".\n   - Set handoffReason to \"KNOWLEDGE_NOT_FOUND\".\n\n5. If the issue requires human intervention, such as an account-specific action, refund processing, dispute resolution, or another action that you cannot perform:\n   - Set action to \"HANDOFF\".\n   - Set handoffReason to \"HUMAN_ACTION_REQUIRED\".\n\n6. Do not claim that an action was completed unless the available tools confirm that it was completed.\n\nReturn ONLY valid JSON in this exact structure:\n\n{\n  \"action\": \"ANSWER\",\n  \"answer\": \"Your response to the customer\",\n  \"handoffReason\": null\n}\n\nOr when human support is required:\n\n{\n  \"action\": \"HANDOFF\",\n  \"answer\": null,\n  \"handoffReason\": \"KNOWLEDGE_NOT_FOUND\"\n}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2176,
+        1536
+      ],
+      "id": "6b9ec4b2-1518-47f2-ac6a-c8051f7f8751",
+      "name": "AI Agent1",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2040,
+        1752
+      ],
+      "id": "77ac274d-dfd3-4083-b3d3-2cd1ddcccd52",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIAL",
+          "name": "YOUR_OPENAI_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.action }}",
+                    "rightValue": "ANSWER",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "3807a482-ecf5-4e19-988e-ecc3543ae73e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ANSWER"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "5837b1e0-e210-4cda-aada-51362a9b8347",
+                    "leftValue": "={{ $json.output.action }}",
+                    "rightValue": "HANDOFF",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "HANDOFF"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2656,
+        1600
+      ],
+      "id": "3cf99c64-1f39-4b73-9dcb-ddccaa340b34",
+      "name": "Check AI Action"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  success: true,\n  conversationId: $('Detect Human Handoff Request').first().json.id,\n  status: 'AI_ACTIVE',\n  answer: $('AI Agent1').first().json.output.answer\n} }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        3104,
+        1744
+      ],
+      "id": "ee0ab49a-520b-442a-91d0-ba585f14e0bc",
+      "name": "AI Answer Response"
+    },
+    {
+      "parameters": {
+        "sendTo": "support@example.com",
+        "subject": "=🚨 Human Handoff Required - {{ $('Detect Human Handoff Request').first().json.id }}",
+        "message": "=A customer conversation requires human support.\n\nConversation ID:\n{{ $('Detect Human Handoff Request').first().json.id }}\n\nCustomer:\n{{ $('Normalize Input').first().json.name }}\n\nEmail:\n{{ $('Normalize Input').first().json.email }}\n\nCustomer Message:\n{{ $('Normalize Input').first().json.message }}\n\nHandoff Reason:\n{{ $('AI Agent1').first().json.output.handoffReason }}\n\nStatus:\nHUMAN_ACTIVE",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        3104,
+        1552
+      ],
+      "id": "e023b80c-8e59-4995-ab1d-f121515c01b4",
+      "name": "Notify Human Agent",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL",
+          "name": "YOUR_GMAIL_CREDENTIAL"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "support@example.com",
+        "subject": "=💬 New Message - Human Conversation - {{ $('Find Active Conversation').first().json.id }}",
+        "message": "=A new message was received in a conversation currently handled by a human agent.  Conversation ID: {{ $('Find Active Conversation').first().json.id }}  Customer: {{ $('Normalize Input').first().json.name }}  Email: {{ $('Normalize Input').first().json.email }}  New Message: {{ $('Normalize Input').first().json.message }}  Status: HUMAN_ACTIVE",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1744,
+        2144
+      ],
+      "id": "06639d61-08f1-4fa2-bcac-bca71632773c",
+      "name": "Forward Message to Human Agent",
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL",
+          "name": "YOUR_GMAIL_CREDENTIAL"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "= {\n  success: true,\n  conversationId: $('Find Active Conversation').first().json.id,\n  status: 'HUMAN_ACTIVE',\n  message: 'Your message has been forwarded to the human support agent.'\n} ",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        3104,
+        2144
+      ],
+      "id": "8a6f9a9c-eb5a-4f39-99bb-6fb79c828356",
+      "name": "AI Answer Response2"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "= {\n  success: true,\n  conversationId: $('Detect Human Handoff Request').first().json.id,\n  status: 'HUMAN_ACTIVE',\n  message: 'Your conversation has been transferred to a human support agent.'\n} ",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        4000,
+        1552
+      ],
+      "id": "4f62e881-3bf8-49bd-8caa-da2d2fc5c7e3",
+      "name": "Human Active Response"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "support_conversations",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Detect Human Handoff Request').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "HUMAN_ACTIVE"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2240,
+        944
+      ],
+      "id": "3495e123-d83a-461b-a939-7f34769221df",
+      "name": "Update Conversation - Human Requested",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "support@example.com",
+        "subject": "=🚨 Human Handoff Required - {{ $('Detect Human Handoff Request').first().json.id }}",
+        "message": "=A customer conversation requires human support.\n\nConversation ID:\n{{ $('Detect Human Handoff Request').first().json.id }}\n\nCustomer:\n{{ $('Normalize Input').first().json.name }}\n\nEmail:\n{{ $('Normalize Input').first().json.email }}\n\nCustomer Message:\n{{ $('Normalize Input').first().json.message }}\n\nHandoff Reason:\nCUSTOMER_REQUESTED_HUMAN\n\nStatus:\nHUMAN_ACTIVE",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2656,
+        1008
+      ],
+      "id": "7702bd0c-f981-4fac-8a70-1e7675d532c0",
+      "name": "Notify Human Agent - Customer Request",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL",
+          "name": "YOUR_GMAIL_CREDENTIAL"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  success: true,\n  conversationId: $('Detect Human Handoff Request').first().json.id,\n  status: 'HUMAN_ACTIVE',\n  message: 'Your conversation has been transferred to a human support agent.'\n} }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        3552,
+        1008
+      ],
+      "id": "e0f8de83-7ceb-49c7-988f-da5ad24b7e38",
+      "name": "Human Request Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"conversationId\": \"{{ $('Find Active Conversation').first().json.id }}\",\n  \"status\": \"CLOSED\",\n  \"message\": \"This conversation is closed. Please start a new conversation.\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2240,
+        2400
+      ],
+      "id": "8d54fedc-1cfe-4ff8-aed4-d254713f1a7f",
+      "name": "Closed Conversation Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": false,\n  \"error\": \"Service temporarily unavailable. Please try again.\"\n}",
+        "options": {
+          "responseCode": 503
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        3104,
+        304
+      ],
+      "id": "3cac2224-d0e8-4805-8dac-8026866d5ec0",
+      "name": "Ai Error Response"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "support_conversations",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "initial_message_id",
+              "keyValue": "={{ $('Normalize Input').first().json.messageId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        2592
+      ],
+      "id": "caf06aa9-70a8-4a5c-adaa-528d4b1eccac",
+      "name": "Check Conversation After Create Failure",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b2f10946-5ad2-4c07-bc2c-83e11769bee2",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1232,
+        2592
+      ],
+      "id": "f56c80f4-8dc6-4c9d-ad99-150bafc384bd",
+      "name": "Conversation Was Created?"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "support_conversations",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Detect Human Handoff Request').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "HUMAN_ACTIVE"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        1504
+      ],
+      "id": "e8c44486-98c9-4839-ba8b-f86ae93a9856",
+      "name": "Update Conversation -Human Active",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=🚨 HUMAN HANDOFF ALERT  Conversation requires human support. Primary email notification failed.  Conversation ID: {{ $('Detect Human Handoff Request').first().json.id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3328,
+        1488
+      ],
+      "id": "860e2e40-3a4d-41df-aa90-fe4dc6ace212",
+      "name": "Backup Human Handoff Alert",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL",
+          "name": "YOUR_TELEGRAM_CREDENTIAL"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "tableId": "support_notification_failures",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "conversation_id",
+              "fieldValue": "={{ $('Detect Human Handoff Request').first().json.id }}"
+            },
+            {
+              "fieldId": "channel",
+              "fieldValue": "TELEGRAM"
+            },
+            {
+              "fieldId": "error_message",
+              "fieldValue": "={{ $json.error.message }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3552,
+        1408
+      ],
+      "id": "569485fb-ad45-4001-ac7b-adf94547ced9",
+      "name": "Log Notification Failure",
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=🚨 HUMAN HANDOFF ALERT  Conversation requires human support. Primary email notification failed.  Conversation ID: {{ $('Detect Human Handoff Request').first().json.id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2880,
+        1088
+      ],
+      "id": "12aa5ba1-d564-4f83-bd4b-76d8d9ba1b0c",
+      "name": "Backup Human Handoff Alert1",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL",
+          "name": "YOUR_TELEGRAM_CREDENTIAL"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "tableId": "support_notification_failures",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "conversation_id",
+              "fieldValue": "={{ $('Detect Human Handoff Request').first().json.id }}"
+            },
+            {
+              "fieldId": "channel",
+              "fieldValue": "TELEGRAM"
+            },
+            {
+              "fieldId": "error_message",
+              "fieldValue": "={{ $json.error.message }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3104,
+        1152
+      ],
+      "id": "5dabe9b4-ae77-46fc-b7ea-17a6518fe60c",
+      "name": "Log Notification Failure1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=🚨 HUMAN HANDOFF ALERT  Conversation requires human support. Primary email notification failed.  Conversation ID: {{ $('Detect Human Handoff Request').first().json.id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2240,
+        2208
+      ],
+      "id": "05bb4cf4-e75f-41c8-af72-50315557087f",
+      "name": "Backup Human Handoff Alert2",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL",
+          "name": "YOUR_TELEGRAM_CREDENTIAL"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "tableId": "support_notification_failures",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "conversation_id",
+              "fieldValue": "={{ $('Detect Human Handoff Request').first().json.id }}"
+            },
+            {
+              "fieldId": "channel",
+              "fieldValue": "TELEGRAM"
+            },
+            {
+              "fieldId": "error_message",
+              "fieldValue": "={{ $json.error.message }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2656,
+        2304
+      ],
+      "id": "5f19310c-6899-4c1d-ab3a-5ac12ce05372",
+      "name": "Log Notification Failure2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_PROJECT_REF.supabase.co/rest/v1/rpc/claim_support_message",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_message_id\": \"{{ $('Normalize Input').first().json.messageId }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -1008,
+        1792
+      ],
+      "id": "42b2511f-b349-4df5-af70-f04460aa1348",
+      "name": "Claim Message",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data }}",
+                    "rightValue": "CLAIMED",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "c8cef3c1-df2b-4277-9f65-979734b2c18e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "CLAIMED"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "8f49a6b9-8b02-4c7b-8902-2b34bf2dd237",
+                    "leftValue": "={{ $json.data }}",
+                    "rightValue": "ALREADY_EXISTS",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ALREADY_EXISTS"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -784,
+        3296
+      ],
+      "id": "04059962-3955-45c2-b65b-521e0a3e8284",
+      "name": "Check Claim Result"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "support_message_idempotency",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "message_id",
+              "keyValue": "={{ $('Validate Input').item.json.messageId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        3392
+      ],
+      "id": "68951a89-5600-47bf-a129-345beeac391e",
+      "name": "Get Existing Message Claim",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "=COMPLETED",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a44f32cd-9043-4a42-ad80-5e97e0d3b8bd"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "COMPLETED"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "5410089a-7b28-4117-81af-42c826bede0e",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "PROCESSING",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "PROCESSING"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -336,
+        3376
+      ],
+      "id": "9bd56db3-5bf8-4a0e-ae64-7b707d25fa87",
+      "name": "Check Existing Message Status"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "48f27fdf-9049-4e35-adf1-4a76c0060e4e",
+              "leftValue": "={{ DateTime.fromISO($json.updated_at) < $now.minus({ minutes: 5 }) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -112,
+        1824
+      ],
+      "id": "da0ede11-4a85-463e-94e2-8d5f8ec136ba",
+      "name": "Is Claim Stale?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  success: true,\n  status: 'PROCESSING',\n  message: 'Message is already being processed'\n} }}",
+        "options": {
+          "responseCode": 202
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        560,
+        2720
+      ],
+      "id": "be29414d-49d3-40fe-90a6-696376ae1eea",
+      "name": "Message Processing Response"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_PROJECT_REF.supabase.co/rest/v1/rpc/reclaim_stale_support_message",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"p_message_id\": \"{{ $('Normalize Input').first().json.messageId }}\"\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        112,
+        1744
+      ],
+      "id": "0246eddc-3799-4e7a-9f81-c3e964bfcf13",
+      "name": "Reclaim Stale Message",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.data }}",
+                    "rightValue": "RECLAIMED",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "cb76b881-e8d3-4ba7-8fea-7bdbaa3415d1"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "RECLAIMED"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b9a84810-45f9-4ee1-a6ca-4794dc315a71",
+                    "leftValue": "={{ $json.data }}",
+                    "rightValue": "NOT_RECLAIMED",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "NOT_RECLAIMED"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        336,
+        1584
+      ],
+      "id": "181429fc-0aba-433e-ac7b-2975b1357f39",
+      "name": "Check Reclaim Result"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "support_message_idempotency",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "message_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Normalize Input').first().json.messageId }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "COMPLETED"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        1744
+      ],
+      "id": "7e83be17-be7c-4c4a-aa9e-782f1d4227ce",
+      "name": "Mark Message Completed",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "support_message_idempotency",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "message_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Normalize Input').first().json.messageId }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "COMPLETED"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3776,
+        1552
+      ],
+      "id": "4e1c6ec3-a651-44ed-87e6-18436e1cc0fe",
+      "name": "Mark Handoff Message Completed",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "support_message_idempotency",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "message_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Normalize Input').first().json.messageId }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "COMPLETED"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        2144
+      ],
+      "id": "24010969-e5f2-4c92-a915-67262e2d2146",
+      "name": "Mark Human Message Completed",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "support_message_idempotency",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "message_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Normalize Input').first().json.messageId }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "COMPLETED"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3328,
+        1008
+      ],
+      "id": "6967e11b-0836-45d1-ba4a-167e44c917b6",
+      "name": "Mark Human Request Completed",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "support_message_idempotency",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "message_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Normalize Input').first().json.messageId }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "COMPLETED"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1744,
+        2400
+      ],
+      "id": "cfbc0495-63a3-4a99-8c96-c402337d57fb",
+      "name": "Mark Closed Message Completed",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "support_message_idempotency",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "message_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Normalize Input').first().json.messageId }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "COMPLETED"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1456,
+        576
+      ],
+      "id": "e73b7ded-124f-457f-972b-e9abcfcf83e1",
+      "name": "Mark Not Found Message Completed",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "support_message_idempotency",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "message_id",
+              "keyValue": "={{ $('Normalize Input').first().json.messageId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        448
+      ],
+      "id": "19cab9c1-0ad3-4c95-8f16-b9ec1d757b80",
+      "name": "Recover Claim After Error",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "=COMPLETED",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "a44f32cd-9043-4a42-ad80-5e97e0d3b8bd"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "COMPLETED"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "5410089a-7b28-4117-81af-42c826bede0e",
+                    "leftValue": "={{ $json.status }}",
+                    "rightValue": "PROCESSING",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "PROCESSING"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -336,
+        624
+      ],
+      "id": "c36d9c5a-f99b-4984-8216-640351d287f0",
+      "name": "Check Recovered Claim Status"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true,\n  \"message\": \"Message was already processed\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -112,
+        352
+      ],
+      "id": "aba84be8-27df-4c21-a22e-bda47d0cf87a",
+      "name": "Already Processed Response"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "support_message_idempotency",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "message_id",
+              "keyValue": "={{ $('Normalize Input').first().json.messageId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        336,
+        2912
+      ],
+      "id": "58dbb914-252f-48c7-bf81-0d3c9351a7ea",
+      "name": "Recover Reclaim After Error",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "supabaseApi": {
+          "id": "YOUR_SUPABASE_CREDENTIAL",
+          "name": "YOUR_SUPABASE_CREDENTIAL"
+        }
+      },
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "retrieve a document": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Customer Support Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Claim Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Active Conversation": {
+      "main": [
+        [
+          {
+            "node": "Conversation Found?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ai Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Exists?": {
+      "main": [
+        [
+          {
+            "node": "Find Active Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Found?": {
+      "main": [
+        [
+          {
+            "node": "Check Conversation Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Not Found Message Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "Check Conversation Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Conversation After Create Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Conversation Status": {
+      "main": [
+        [
+          {
+            "node": "Detect Human Handoff Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Forward Message to Human Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Closed Message Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Detect Human Handoff Request",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Human Handoff Request": {
+      "main": [
+        [
+          {
+            "node": "Update Conversation - Human Requested",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ai Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "retrieve a document",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Check AI Action",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ai Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check AI Action": {
+      "main": [
+        [
+          {
+            "node": "Mark Message Completed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Conversation -Human Active",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Human Agent": {
+      "main": [
+        [
+          {
+            "node": "Mark Handoff Message Completed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Backup Human Handoff Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forward Message to Human Agent": {
+      "main": [
+        [
+          {
+            "node": "Mark Human Message Completed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Backup Human Handoff Alert2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Conversation - Human Requested": {
+      "main": [
+        [
+          {
+            "node": "Notify Human Agent - Customer Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ai Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Human Agent - Customer Request": {
+      "main": [
+        [
+          {
+            "node": "Mark Human Request Completed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Backup Human Handoff Alert1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Conversation After Create Failure": {
+      "main": [
+        [
+          {
+            "node": "Conversation Was Created?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Was Created?": {
+      "main": [
+        [
+          {
+            "node": "Check Conversation Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ai Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Conversation -Human Active": {
+      "main": [
+        [
+          {
+            "node": "Notify Human Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ai Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Backup Human Handoff Alert": {
+      "main": [
+        [
+          {
+            "node": "Mark Handoff Message Completed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Notification Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Notification Failure": {
+      "main": [
+        [
+          {
+            "node": "Mark Handoff Message Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Backup Human Handoff Alert1": {
+      "main": [
+        [
+          {
+            "node": "Mark Human Request Completed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Notification Failure1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Notification Failure1": {
+      "main": [
+        [
+          {
+            "node": "Mark Human Request Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Backup Human Handoff Alert2": {
+      "main": [
+        [
+          {
+            "node": "Mark Human Message Completed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Notification Failure2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Notification Failure2": {
+      "main": [
+        [
+          {
+            "node": "Mark Human Message Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim Message": {
+      "main": [
+        [
+          {
+            "node": "Check Claim Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Recover Claim After Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Claim Result": {
+      "main": [
+        [
+          {
+            "node": "Conversation Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Existing Message Claim",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing Message Claim": {
+      "main": [
+        [
+          {
+            "node": "Check Existing Message Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Existing Message Status": {
+      "main": [
+        [
+          {
+            "node": "Already Processed Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Claim Stale?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ai Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Claim Stale?": {
+      "main": [
+        [
+          {
+            "node": "Reclaim Stale Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Message Processing Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reclaim Stale Message": {
+      "main": [
+        [
+          {
+            "node": "Check Reclaim Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Recover Reclaim After Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Reclaim Result": {
+      "main": [
+        [
+          {
+            "node": "Conversation Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Message Processing Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Message Completed": {
+      "main": [
+        [
+          {
+            "node": "AI Answer Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Handoff Message Completed": {
+      "main": [
+        [
+          {
+            "node": "Human Active Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Human Message Completed": {
+      "main": [
+        [
+          {
+            "node": "AI Answer Response2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Human Request Completed": {
+      "main": [
+        [
+          {
+            "node": "Human Request Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Closed Message Completed": {
+      "main": [
+        [
+          {
+            "node": "Closed Conversation Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Not Found Message Completed": {
+      "main": [
+        [
+          {
+            "node": "Conversation Not Found Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recover Claim After Error": {
+      "main": [
+        [
+          {
+            "node": "Check Recovered Claim Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ai Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Recovered Claim Status": {
+      "main": [
+        [
+          {
+            "node": "Already Processed Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Claim Stale?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ai Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recover Reclaim After Error": {
+      "main": [
+        [
+          {
+            "node": "Message Processing Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ai Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": [],
+  "tags": []
+}
