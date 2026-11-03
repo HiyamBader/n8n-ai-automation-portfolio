@@ -6,6 +6,12 @@ The workflow includes API-key authentication, idempotency protection, input vali
 
 ![Workflow overview](assets/workflow-overview.png)
 
+## Video Demo
+
+[![Watch the n8n + HubSpot demo](https://img.youtube.com/vi/ZwLHdwEKn8o/hqdefault.jpg)](https://youtu.be/ZwLHdwEKn8o)
+
+[Watch the 42-second portfolio demo](https://youtu.be/ZwLHdwEKn8o): submit a lead, verify the HubSpot contact, and retry the same request ID to see duplicate processing skipped.
+
 ## Features
 
 - Receives lead data through a `POST` webhook.
