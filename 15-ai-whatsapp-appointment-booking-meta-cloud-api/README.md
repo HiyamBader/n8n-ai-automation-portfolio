@@ -1,6 +1,6 @@
 # WhatsApp AI Appointment Booking Agent — Meta Cloud API
 
-![Workflow overview](overview.png)
+![Workflow overview](assets/overview.png)
 
 An end-to-end appointment booking workflow built in n8n using the official Meta WhatsApp Cloud API, Gemini structured extraction, Google Calendar, and n8n Data Tables.
 
